@@ -1,2 +1,2 @@
 # taskflow-project
-Tareas de proyectos de las prácticas en The Corner Studio
+Tareas de proyectos de las prácticas en Corner Estudios
