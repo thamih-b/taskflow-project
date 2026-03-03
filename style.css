@@ -1,5 +1,5 @@
 :root {
-  /* Cores */
+  /* Light mode (padrão) */
   --primary-color: #3498db;
   --secondary-color: #2ecc71;
   --bg-color: #f8f9fa;
@@ -7,19 +7,32 @@
   --text-color: #333;
   --high-priority: #e74c3c;
   --medium-priority: #f39c12;
+  --low-priority: #95a5a6;
+  --border-color: #ddd;
 
-  /* Fontes */
+  /* Fontes e espaçamentos (mantidos) */
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   --font-size-base: 16px;
   --font-size-sm: 14px;
   --font-size-lg: 18px;
-
-  /* Espaçamentos */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
   --spacing-lg: 2rem;
   --spacing-xl: 3rem;
+}
+
+/* Dark mode automático */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --text-color: #e0e0e0;
+    --border-color: #444;
+    --high-priority: #ff6b6b;
+    --medium-priority: #ffd93d;
+    --low-priority: #6c757d;
+  }
 }
 
 * {
@@ -34,6 +47,8 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
 }
 
 header {
@@ -46,12 +61,6 @@ header {
 header h1 {
   font-size: 2rem;
   margin-bottom: var(--spacing-xs);
-}
-
-/* Layout principal */
-body {
-  display: flex;
-  min-height: 100vh;
 }
 
 main {
@@ -68,9 +77,103 @@ aside {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* Tarefas com flexbox */
 section h2 {
   margin-bottom: var(--spacing-md);
+}
+
+/* Checkbox customizado */
+.task-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.task-check-input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.task-check-label {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  font-size: 22px;
+  user-select: none;
+  width: 24px;
+  height: 24px;
+  background: var(--border-color);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.task-check-label::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 6px;
+  height: 10px;
+  border: solid var(--card-bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.task-check-input:checked + .task-check-label {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.task-check-input:checked + .task-check-label::after {
+  display: block;
+}
+
+/* Seletor de prioridade */
+.priority-select {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-color);
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.priority-select option[value="high"] { color: var(--high-priority); }
+.priority-select option[value="medium"] { color: var(--medium-priority); }
+.priority-select option[value="low"] { color: var(--low-priority); }
+
+/* Classes de prioridade dinâmica */
+article.priority-high { border-left-color: var(--high-priority); }
+article.priority-high .priority-badge { background: var(--high-priority); }
+
+article.priority-medium { border-left-color: var(--medium-priority); }
+article.priority-medium .priority-badge { background: var(--medium-priority); }
+
+article.priority-low { border-left-color: var(--low-priority); }
+article.priority-low .priority-badge { background: var(--low-priority); }
+
+/* Badge prioridade (span anterior renomeado) */
+.priority-badge {
+  align-self: flex-start;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+}
+
+/* Task header atualizado */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  width: 100%;
 }
 
 article {
@@ -95,7 +198,6 @@ article p {
   font-size: var(--font-size-sm);
 }
 
-/* Badge prioridade */
 article span {
   align-self: flex-start;
   background: var(--high-priority);
@@ -106,43 +208,115 @@ article span {
   font-weight: bold;
 }
 
-/* Media Queries para mobile */
+.task-input-container {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  align-items: end;
+}
+
+.task-input {
+  flex: 1;
+  padding: var(--spacing-lg);
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  min-height: 20px;
+}
+
+.category-input {
+  flex: 1; /* Mesmo tamanho do task-input */
+  max-width: 200px; /* Limita largura pra caber tudo */
+}
+
+.task-input-container {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  align-items: end;
+  flex-wrap: wrap; /* Quebra linha em mobile */
+}
+
 @media (max-width: 768px) {
-  body {
+  .task-input-container {
     flex-direction: column;
+    align-items: stretch;
   }
   
-  aside {
-    width: 100%;
-    order: -1; /* aside fica em cima no mobile */
-    margin-bottom: var(--spacing-md);
-  }
-  
-  main {
-    padding: var(--spacing-sm);
-  }
-  
-  header h1 {
-    font-size: 1.5rem;
-  }
-  
-  article {
-    padding: var(--spacing-sm);
+  .category-input {
+    max-width: none;
   }
 }
 
-@media (max-width: 480px) {
-  article h3 {
-    font-size: var(--font-size-base);
-  }
+
+.add-btn {
+  flex-shrink: 0;
+  background: var(--secondary-color) !important;
+  color: white;
+  border: none;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(46,204,113,0.3);
+}
+
+.add-btn:hover {
+  background: #27ae60 !important;
+  transform: translateY(-1px);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.delete-btn {
+  background: var(--high-priority);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
 }
 
 /* Estados das tarefas */
+/* Estados das tarefas - APENAS riscar o título h3 */
 article.completed {
   opacity: 0.6;
   background: #ecf0f1;
-  border-left-color: var(--medium-priority);
+  /* Removido: text-decoration: line-through; */
+}
+
+article.completed h3 {
   text-decoration: line-through;
+  opacity: 0.8; /* Mantém legível */
+}
+
+/* Opcional: Desabilita interações em completed */
+article.completed .priority-select,
+article.completed .delete-btn {
+  opacity: 0.5;
+  pointer-events: none; /* Não clica em completed */
+}
+
+article.completed:hover .priority-select,
+article.completed:hover .delete-btn {
+  pointer-events: auto; /* Reativa no hover */
 }
 
 /* Transições suaves */
@@ -158,5 +332,73 @@ article:hover {
 }
 
 article.completed:hover {
-  transform: none; /* Sem hover quando completa */
+  transform: none;
+}
+
+/* Media Queries para mobile */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+    padding: var(--spacing-xs);
+  }
+  
+  aside {
+    width: 100%;
+    order: -1;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  main {
+    padding: 0;
+  }
+  
+  header {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+  
+  header h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Task header em mobile: stack vertical */
+  .task-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+  
+  .task-header h3 {
+    font-size: var(--font-size-base);
+  }
+
+  /* Badge e delete lado a lado em mobile */
+  .task-header .priority,
+  .delete-btn {
+    align-self: flex-end;
+    font-size: var(--font-size-sm);
+  }
+  
+  article {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+}
+  .priority-select {
+    font-size: var(--font-size-sm);
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --spacing-sm: 0.75rem;
+  }
+  
+  body {
+    font-size: var(--font-size-sm);
+  }
+
+  article h3 {
+    font-size: var(--font-size-base);
+  }
 }
