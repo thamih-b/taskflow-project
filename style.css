@@ -618,8 +618,8 @@ article.completed:hover {
   }
   
   aside {
-    width: 100% !important; /* Full width */
-    order: 1; /* Aside em cima */
+    width: 100% !important;
+    order: 99; 
     max-width: 100vw;
   }
   
