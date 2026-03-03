@@ -611,98 +611,63 @@ article.completed:hover {
 }
 
 
-/* Media Queries para mobile */
+/* MOBILE: Stack vertical + 100% largura */
 @media (max-width: 768px) {
   body {
-    flex-direction: column;
-    padding: var(--spacing-xs);
+    flex-direction: column !important; /* Stack vertical */
   }
   
   aside {
-    width: 100%;
-    order: -1;
-    margin-bottom: var(--spacing-md);
+    width: 100% !important; /* Full width */
+    order: 1; /* Aside em cima */
+    max-width: 100vw;
   }
   
   main {
-    padding: 0;
-  }
-  
-  header {
-    background-position: center 20%; /* Mostra mais o rosto */
-    min-height: 150px;
-    padding: var(--spacing-lg);
-  }
-
-  
-  header h1 {
-    font-size: 1.25rem;
-  }
-
- .task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem; /* ← AQUI: Aumenta de var(--spacing-xs) pra 1rem (16px) */
-  width: 100%;
-}
-  
-  .task-header h3 {
-    font-size: var(--font-size-base);
-  }
-
-  /* Badge e delete lado a lado em mobile */
-  .task-header .priority,
-  .delete-btn {
-    align-self: flex-end;
-    font-size: var(--font-size-sm);
-  }
-  
-  article {
+    order: 2; /* Main depois */
+    width: 100%;
     padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-  }
-}
-  .priority-select {
-    font-size: var(--font-size-sm);
-    min-width: 70px;
-  }
-
-
-/* Mobile: Stack vertical limpo */
-@media (max-width: 768px) {
-  .task-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-xs);
+    max-width: 100vw;
   }
   
-  .priority-controls {
-    align-self: flex-end;
-    flex-direction: row-reverse; /* Badge antes do select no mobile */
+
+  /* Cards sem overflow */
+  article {
+    width: 100%;
+    max-width: 100vw;
+    margin: 0;
   }
   
-  article h3 {
-    -webkit-line-clamp: 1; /* 1 linha no mobile */
-    max-height: 1.3em;
-    font-size: var(--font-size-base);
-  }
+/* Zero scroll X */
+html, body {
+  overflow-x: hidden;
 }
 
-@media (max-width: 480px) {
-  :root {
-    --spacing-sm: 0.75rem;
-  }
-  
-  body {
-    font-size: var(--font-size-sm);
-  }
-
-  article h3 {
-    font-size: var(--font-size-base);
-  }
+.task-input-container {
+  display: flex; /* Certifique-se de ter isso */
+  flex-direction: column;
+  align-items: center; /* Centraliza horizontalmente em coluna */
+  width: 100%;
+  gap: 10px; /* Espaçamento uniforme entre elementos */
 }
+
+.task-input-container input,
+.task-input-container select {
+  width: auto; /* Ou defina um max-width como 300px para controle */
+  max-width: 90%; /* Responsivo */
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+}
+
+.add-btn {
+  width: 100%;
+  max-width: 200px; /* Evita botão gigante em telas largas */
+  margin-top: 10px;
+}
+
+
 
 
 /* Filter Buttons - Painéis metálicos */
