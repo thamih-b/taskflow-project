@@ -1,0 +1,89 @@
+# =============================================================
+# .gitignore para Organizador de Tareas
+# =============================================================
+
+# ================================
+# 🚫 DEPENDENCIAS (MASIVO 200MB+)
+# ================================
+**/node_modules/
+**/node_modules/*
+node_modules/
+
+# ================================
+# 🏗 BUILDS Y OUTPUT
+# ================================
+dist/
+**/dist/
+output/
+**/output/
+build/
+**/build/
+
+# ================================
+# 📦 NPM/YARN
+# ================================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+postcss.config.js
+
+# ================================
+# 🎨 CSS GENERADOS
+# ================================
+*.css
+*.min.css
+input.css
+style.css
+output.css
+
+# ================================
+# 💻 IDE / EDITORES
+# ================================
+.vscode/
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# ================================
+# 🍎 WINDOWS / MAC / LINUX
+# ================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ================================
+# 🌐 BROWSER / CACHE
+# ================================
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ================================
+# 🔒 SEGURIDAD
+# ================================
+.env
+.env.local
+.env.*.local
+*.key
+
+# ================================
+# 📱 PWA / SERVICE WORKERS
+# ================================
+sw.js
+manifest.json
+
+# ================================
+# 🧪 TESTING
+# ================================
+coverage/
+.nyc_output/

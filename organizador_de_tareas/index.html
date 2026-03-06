@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizador de Tareas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            parchment: { DEFAULT: '#f5ecd6', dark: '#1c1917' },
+            ink: '#1f2933',
+            inksoft: { DEFAULT: '#6b7280', dark: '#f3f4f6' }
+          },
+          fontFamily: {
+            mono: ['"Courier New"', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="min-h-screen font-mono text-ink dark:text-zinc-100 flex flex-col md:flex-row items-stretch bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.12),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.18),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.6),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.8),_transparent_65%)]">
+  
+  <div class="flex-1 max-w-4xl mx-auto md:mx-8 my-6 md:my-10 bg-parchment/95 dark:bg-zinc-900/90 border border-amber-900/40 dark:border-amber-700/40 shadow-[0_20px_60px_rgba(0,0,0,0.45)] rounded-xl relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-3 border border-amber-900/50 dark:border-amber-600/50 rounded-xl" aria-hidden="true"></div>
+
+    <header class="relative px-6 sm:px-10 py-8 sm:py-10 border-b border-amber-900/40 dark:border-amber-700/40 bg-gradient-to-br from-amber-200/70 via-amber-100/90 to-amber-50/80 dark:from-amber-900/60 dark:via-amber-800/70 dark:to-amber-700/50 overflow-hidden lg:pb-2">
+      <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full border border-amber-800/40 dark:border-amber-300/30 blur-sm" aria-hidden="true"></div>
+      <div class="absolute -left-16 bottom-0 w-40 h-40 rounded-full border border-amber-900/40 dark:border-amber-400/30 blur-[2px]" aria-hidden="true"></div>
+
+      <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl sm:text-4xl tracking-[0.2em] uppercase font-semibold text-amber-900 dark:text-amber-100 drop-shadow-sm">Organizador de Tareas</h1>
+          <p class="mt-2 text-sm sm:text-base text-inksoft dark:text-amber-100/80">Un presente organizado es un futuro seguro.</p>
+        </div>
+        <button id="themeToggle" type="button" class="hidden lg:block p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-2xl hover:scale-105 transition-all duration-300 text-white font-bold text-sm absolute lg:static top-4 right-4 lg:top-auto lg:right-auto z-20">
+          <span id="sunIcon" class="hidden">☀️ Modo Claro</span>
+          <span id="moonIcon">🌙 Modo Oscuro</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="relative px-4 sm:px-8 py-6 sm:py-8">
+      <section aria-label="Agregar nueva tarea" class="mb-8">
+        <div class="task-input-container flex flex-col lg:flex-row gap-3 lg:gap-4 items-stretch lg:items-end">
+          <input type="text" id="newTaskInput" placeholder="Escribe la tarea..." aria-label="Nueva tarea" class="task-input flex-1 rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 focus:border-amber-500/80 transition">
+          <input type="text" id="newCategoryInput" placeholder="Categoría (opcional)..." aria-label="Categoría" class="category-input flex-1 rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 focus:border-amber-500/80 transition">
+          <button id="addTaskBtn" type="button" class="add-btn inline-flex justify-center items-center rounded-md bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-amber-950 font-semibold text-sm px-5 py-3 shadow-lg shadow-amber-800/30 hover:shadow-amber-800/50 hover:brightness-105 active:scale-[0.97] transition">
+            Agregar
+          </button>
+        </div>
+      </section>
+
+      <section aria-label="Lista de tareas" id="tasksContainer" class="space-y-4">
+        <h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">Tareas</h2>
+        <div id="noTasksMessage" class="hidden text-center py-8 text-inksoft dark:text-amber-300">
+          ✨ No hay tareas. ¡Agrega la primera!
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside class="w-full md:w-80 mt-4 md:mt-10 md:mr-6 md:ml-0 px-4 md:px-0">
+    <div class="sticky top-4 md:top-10 bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-[0_18px_40px_rgba(0,0,0,0.55)] px-4 py-5 space-y-4">
+      <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Filtros</h2>
+      
+      <div class="search-container relative">
+        <input type="search" id="searchInput" placeholder="🔍 Buscar tareas..." aria-label="Buscar tareas" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/70 dark:bg-zinc-900/80 px-3 py-2 text-sm text-inksoft dark:text-amber-100 placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 focus:border-amber-500/80">
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button class="filter-btn active text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-amber-900/40 dark:border-amber-500/60 bg-amber-100/80 dark:bg-amber-700/70 text-inksoft dark:text-amber-50 shadow-sm hover:bg-amber-200/90 dark:hover:bg-amber-600/80 transition" data-filter="all">Todas</button>
+        <button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-red-700/60 dark:border-red-400/70 bg-transparent text-red-800 dark:text-red-200 hover:bg-red-100/30 dark:hover:bg-red-900/40 transition" data-filter="high">Alta prioridad</button>
+        <button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-amber-700/60 dark:border-amber-400/70 bg-transparent text-amber-800 dark:text-amber-200 hover:bg-amber-100/30 dark:hover:bg-amber-900/40 transition" data-filter="medium">Media prioridad</button>
+        <button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-emerald-700/60 dark:border-emerald-400/70 bg-transparent text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/40 transition" data-filter="low">Baja prioridad</button>
+        <button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-zinc-700/60 dark:border-zinc-400/70 bg-transparent text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100/30 dark:hover:bg-zinc-900/40 transition" data-filter="completed">Completadas</button>
+        <button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-blue-700/60 dark:border-blue-400/70 bg-transparent text-blue-800 dark:text-blue-200 hover:bg-blue-100/30 dark:hover:bg-blue-900/40 transition" data-filter="pending">Pendientes</button>
+      </div>
+      
+      <div class="text-xs text-inksoft dark:text-amber-300">
+        <span id="tasksCounter">0</span> tareas
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-amber-900/20 dark:border-amber-400/30">
+        <h3 class="text-xs uppercase tracking-wider font-semibold text-amber-800 dark:text-amber-200 mb-3 text-center">Categorías</h3>
+        <div class="category-filters flex flex-wrap gap-1.5 max-h-16 overflow-y-auto px-1" id="categoryFilterContainer">
+          <button class="cat-filter-btn active text-xs px-3 py-1.5 rounded-full border border-amber-900/40 bg-amber-100/80 dark:bg-amber-700/70 text-inksoft dark:text-amber-50 shadow-sm hover:bg-amber-200 transition min-w-[55px]" data-category="all">Todas</button>
+        </div>
+      </div>
+
+      <button id="themeToggleMobile" class="lg:hidden w-full p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-xl hover:scale-105 transition-all duration-300 text-white font-bold text-sm">
+        <span id="sunIconMobile" class="hidden">☀️ Modo Claro</span>
+        <span id="moonIconMobile">🌙 Modo Oscuro</span>
+      </button>
+    </div>
+  </aside>
+
+  <script>
+    class Organizator {
+      constructor() {
+        this.tasks = JSON.parse(localStorage.getItem('organizator-tasks')) || [];
+        this.currentFilter = 'all';
+        this.currentCategory = 'all';
+        this.searchTerm = '';
+        this.init();
+      }
+
+      init() {
+        this.loadTheme();
+        this.bindEvents();
+        this.render();
+      }
+
+      loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        const html = document.documentElement;
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIconMobile = document.getElementById('sunIconMobile');
+        const moonIconMobile = document.getElementById('moonIconMobile');
+        
+        if (savedTheme === 'dark') {
+          html.classList.remove('light');
+          html.classList.add('dark');
+          sunIcon?.classList.remove('hidden');
+          moonIcon?.classList.add('hidden');
+          sunIconMobile?.classList.remove('hidden');
+          moonIconMobile?.classList.add('hidden');
+        }
+      }
+
+      bindEvents() {
+        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('themeToggleMobile')?.addEventListener('click', () => this.toggleTheme());
+
+        document.getElementById('addTaskBtn').addEventListener('click', () => this.addTask());
+        document.getElementById('newTaskInput').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.addTask();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          this.searchTerm = e.target.value.toLowerCase();
+          this.render();
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            this.currentFilter = e.target.dataset.filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            this.render();
+          });
+        });
+
+        document.addEventListener('click', (e) => {
+          if (e.target.classList.contains('cat-filter-btn')) {
+            this.currentCategory = e.target.dataset.category;
+            document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            this.render();
+          }
+        });
+      }
+
+      toggleTheme() {
+        const html = document.documentElement;
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIconMobile = document.getElementById('sunIconMobile');
+        const moonIconMobile = document.getElementById('moonIconMobile');
+        
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          html.classList.add('light');
+          sunIcon?.classList.add('hidden');
+          moonIcon?.classList.remove('hidden');
+          sunIconMobile?.classList.add('hidden');
+          moonIconMobile?.classList.remove('hidden');
+          localStorage.setItem('theme', 'light');
+        } else {
+          html.classList.remove('light');
+          html.classList.add('dark');
+          sunIcon?.classList.remove('hidden');
+          moonIcon?.classList.add('hidden');
+          sunIconMobile?.classList.remove('hidden');
+          moonIconMobile?.classList.add('hidden');
+          localStorage.setItem('theme', 'dark');
+        }
+      }
+
+      addTask() {
+        const taskInput = document.getElementById('newTaskInput');
+        const categoryInput = document.getElementById('newCategoryInput');
+        
+        const taskText = taskInput.value.trim();
+        const category = categoryInput.value.trim() || 'General';
+        
+        if (!taskText) return;
+
+        const newTask = {
+          id: Date.now().toString(),
+          text: taskText,
+          category: category,
+          priority: 'medium',
+          completed: false,
+          createdAt: new Date().toISOString()
+        };
+
+        this.tasks.unshift(newTask);
+        this.saveTasks();
+        
+        taskInput.value = '';
+        categoryInput.value = '';
+        taskInput.focus();
+        this.render();
+      }
+
+      deleteTask(taskId) {
+        this.tasks = this.tasks.filter(task => task.id !== taskId);
+        this.saveTasks();
+        this.render();
+      }
+
+      toggleTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+          task.completed = !task.completed;
+          this.saveTasks();
+          this.render();
+        }
+      }
+
+      updatePriority(taskId, priority) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+          task.priority = priority;
+          this.saveTasks();
+          this.render();
+        }
+      }
+
+      getPriorityColor(priority) {
+        const colors = {
+          high: 'border-red-600 bg-red-600',
+          medium: 'border-amber-600 bg-amber-600',
+          low: 'border-emerald-600 bg-emerald-600'
+        };
+        return colors[priority] || 'border-zinc-600 bg-zinc-600';
+      }
+
+      getPriorityText(priority) {
+        const texts = { high: 'Alta', medium: 'Media', low: 'Baja' };
+        return texts[priority] || 'Media';
+      }
+
+      getUniqueCategories() {
+        const categories = ['all'];
+        this.tasks.forEach(task => {
+          if (!categories.includes(task.category)) {
+            categories.push(task.category);
+          }
+        });
+        return categories;
+      }
+
+      matchesFilter(task) {
+        const matchesSearch = task.text.toLowerCase().includes(this.searchTerm) ||
+                              task.category.toLowerCase().includes(this.searchTerm);
+        
+        const matchesPriority = this.currentFilter === 'all' || 
+                               (this.currentFilter === task.priority) ||
+                               (this.currentFilter === 'completed' && task.completed) ||
+                               (this.currentFilter === 'pending' && !task.completed);
+        
+        const matchesCategory = this.currentCategory === 'all' || task.category === this.currentCategory;
+
+        return matchesSearch && matchesPriority && matchesCategory;
+      }
+
+      renderCategoryFilters() {
+        const container = document.getElementById('categoryFilterContainer');
+        const categories = this.getUniqueCategories();
+        
+        container.innerHTML = `
+          <button class="cat-filter-btn ${this.currentCategory === 'all' ? 'active' : ''} text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-900/40 bg-amber-100/80 dark:bg-amber-700/70 text-inksoft dark:text-amber-50 shadow-sm hover:bg-amber-200 transition text-center min-w-[60px]" data-category="all">Todas</button>
+        `;
+        
+        categories.slice(1).forEach(category => {
+          container.innerHTML += `
+            <button class="cat-filter-btn ${this.currentCategory === category ? 'active' : ''} text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-500/50 bg-blue-100/60 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition text-center min-w-[60px]" data-category="${category}">${category}</button>
+          `;
+        });
+      }
+
+      render() {
+        const container = document.getElementById('tasksContainer');
+        const noTasksMsg = document.getElementById('noTasksMessage');
+        const counter = document.getElementById('tasksCounter');
+        
+        const filteredTasks = this.tasks.filter(task => this.matchesFilter(task));
+        
+        if (filteredTasks.length === 0) {
+          container.innerHTML = `
+            <h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">Tareas</h2>
+            <div class="text-center py-8 text-inksoft dark:text-amber-300">
+              ✨ No hay tareas${this.searchTerm ? ' que coincidan con "' + this.searchTerm + '"' : ''}. ¡Agrega la primera!
+            </div>
+          `;
+          counter.textContent = '0';
+          this.renderCategoryFilters();
+          return;
+        }
+        
+        this.renderCategoryFilters();
+        
+        let tasksHTML = `
+          <h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">Tareas</h2>
+        `;
+
+        filteredTasks.forEach(task => {
+          const priorityClass = `priority-${task.priority} border-l-4 ${this.getPriorityColor(task.priority)}/80`;
+          const badgeClass = `priority-badge inline-flex items-center rounded-full ${this.getPriorityColor(task.priority)} text-amber-50 text-xs font-semibold px-3 py-1 shadow-sm`;
+          const lineThrough = task.completed ? 'line-through opacity-60' : '';
+
+          tasksHTML += `
+            <article class="task-item relative bg-gradient-to-br from-amber-50/80 via-amber-100/60 to-amber-50/70 dark:from-zinc-800/70 dark:via-zinc-700/60 dark:to-zinc-800/50 border border-amber-800/30 dark:border-amber-400/40 border-l-8 border-amber-900/60 dark:border-amber-300/50 shadow-[8px_8px_16px_rgba(0,0,0,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] hover:shadow-[10px_10px_20px_rgba(0,0,0,0.4)] rounded-2xl p-6 pt-8 pb-6 cursor-grab active:cursor-grabbing active:translate-x-1 active:translate-y-1 transition-all duration-200">
+              <div class="task-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-4 border-b border-amber-900/20 dark:border-amber-400/30 mb-4">
+                <div class="absolute -top-3 -left-4 bg-amber-50/80 dark:bg-zinc-800/80 p-1 rounded-full shadow-lg border-2 border-amber-900/40 dark:border-amber-400/40">
+                  <input type="checkbox" class="task-check-input peer sr-only" ${task.completed ? 'checked' : ''}>
+                  <label class="task-check-label relative inline-flex h-7 w-7 items-center justify-center rounded-lg border-2 border-amber-900/50 dark:border-amber-400/50 bg-white/90 dark:bg-zinc-900/80 cursor-pointer transition-all hover:scale-[1.1] peer-checked:bg-emerald-400/90 dark:peer-checked:bg-emerald-600/50 peer-checked:border-emerald-500 peer-checked:shadow-emerald-400/30">
+                    <span class="text-xl font-bold text-emerald-50 opacity-0 peer-checked:opacity-100 drop-shadow-sm">✓</span>
+                  </label>
+                </div>
+                <h3 class="flex-1 min-w-0 text-base sm:text-lg font-serif italic text-amber-900/95 dark:text-amber-100/90 leading-relaxed ${lineThrough} line-clamp-3 cursor-pointer tracking-wide">
+                  ${task.text}
+                </h3>
+
+                <label for="priority-${task.id}" class="priority-select-container relative inline-flex items-center gap-2 text-xs sm:text-sm rounded-full border border-amber-900/50 dark:border-amber-400/60 bg-amber-50/80 dark:bg-zinc-900/80 px-4 py-2 text-inksoft dark:text-amber-100 cursor-pointer group hover:bg-amber-100/50 dark:hover:bg-zinc-800/50 transition">
+                  Prioridad: 
+                  <span class="priority-badge text-xs font-semibold px-2 py-1 rounded-full ml-1 shadow-sm ring-1 text-white 
+                    ${task.priority === 'high' ? 'bg-red-500/90 border-red-400/50 dark:bg-red-600/90 dark:border-red-400/60 ring-red-500/30 dark:ring-red-400/40' : ''}
+                    ${task.priority === 'medium' ? 'bg-amber-500/90 border-amber-600/50 dark:bg-amber-500/80 dark:border-amber-400/60 ring-amber-500/30 dark:ring-amber-400/40' : ''}
+                    ${task.priority === 'low' ? 'bg-emerald-500/90 border-emerald-600/50 dark:bg-emerald-500/80 dark:border-emerald-400/60 ring-emerald-500/30 dark:ring-emerald-400/40' : ''}">
+                    ${this.getPriorityText(task.priority)}
+                  </span>
+                  <select id="priority-${task.id}" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="organizator.updatePriority('${task.id}', this.value)">
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>Alta</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Media</option>
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
+                  </select>
+                </label>
+
+                <button class="delete-btn absolute -top-3 -right-4 w-7 h-7 rounded-full bg-red-700 text-amber-50 text-sm font-bold shadow-md hover:shadow-lg hover:bg-red-800 active:scale-95 transition" onclick="organizator.deleteTask('${task.id}')">
+                  ✕
+                </button>
+              </div>
+
+              <p class="text-xs sm:text-sm text-amber-700/80 dark:text-amber-300/70 font-serif italic mt-auto pt-2 border-amber-900/10 dark:border-amber-400/20 flex items-center gap-2">
+                📓 <span>${task.category}</span>
+              </p>
+            </article>
+          `;
+        });
+
+        container.innerHTML = tasksHTML;
+        counter.textContent = filteredTasks.length;
+
+        container.querySelectorAll('.task-check-label').forEach((label, index) => {
+          label.addEventListener('click', () => {
+            const taskId = filteredTasks[index].id;
+            this.toggleTask(taskId);
+          });
+        });
+      }
+
+      saveTasks() {
+        localStorage.setItem('organizator-tasks', JSON.stringify(this.tasks));
+      }
+    }
+
+    const organizator = new Organizator();
+  </script>
+</body>
+</html>
