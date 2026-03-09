@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Organizador de Tareas</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar oculta pero funcional para la barra lateral */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -27,7 +32,6 @@
 <body class="min-h-screen font-mono text-ink dark:text-zinc-100 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.12),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.18),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.6),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.8),_transparent_65%)] transition-colors duration-300">
   
   <div class="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row gap-6 lg:gap-12 px-8 sm:px-10 md:px-12 lg:px-16 items-start py-6 md:py-10">
-
     
     <!-- COLUMNA IZQUIERDA: Tareas -->
     <div class="flex-1 w-full bg-parchment/95 dark:bg-zinc-900/90 border border-amber-900/40 dark:border-amber-700/40 shadow-[0_20px_60px_rgba(0,0,0,0.45)] rounded-xl relative overflow-hidden">
@@ -51,16 +55,22 @@
 
       <main class="relative px-8 sm:px-10 py-6 sm:py-8">
 
+        <!-- Agregar nueva tarea -->
         <section aria-label="Agregar nueva tarea" class="mb-8">
           <div class="task-input-container flex flex-col lg:flex-row gap-3 lg:gap-4 items-stretch lg:items-end">
             <input type="text" id="newTaskInput" placeholder="Escribe la tarea..." aria-label="Título de nueva tarea" class="task-input flex-[2] rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
             
-            <div class="flex-1 relative">
-              <input type="text" id="newCategoryInput" list="categoryOptions" placeholder="Categoría..." aria-label="Categoría" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
-              <datalist id="categoryOptions"></datalist>
+            <!-- Contenedor de Categoría Dinámico -->
+            <div class="flex-1 relative flex items-center">
+              <select id="newCategorySelect" aria-label="Seleccionar Categoría" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer" onchange="if(this.value === 'nueva'){ this.classList.add('hidden'); document.getElementById('newCategoryText').classList.remove('hidden'); document.getElementById('newCategoryText').focus(); }">
+                <!-- JS inyecta opciones aquí -->
+              </select>
+              <input type="text" id="newCategoryText" placeholder="Nueva categoría..." aria-label="Escribir nueva categoría" class="w-full hidden rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
+              <!-- Botón para cancelar la escritura -->
+              <button type="button" onclick="document.getElementById('newCategoryText').classList.add('hidden'); document.getElementById('newCategoryText').value=''; document.getElementById('newCategorySelect').classList.remove('hidden'); document.getElementById('newCategorySelect').selectedIndex=0;" class="absolute right-2 text-red-500 font-bold hidden hover:scale-110" id="cancelNewCatBtn" aria-label="Cancelar nueva categoría">✕</button>
             </div>
 
-            <!-- Select nativo adaptado visualmente para tema claro/oscuro -->
+            <!-- Selector de Prioridad -->
             <select id="newPriorityInput" aria-label="Prioridad de la tarea" class="flex-1 rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer">
               <option value="high" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-zinc-100">Prioridad: Alta</option>
               <option value="medium" selected class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-zinc-100">Prioridad: Media</option>
@@ -73,56 +83,58 @@
           </div>
         </section>
 
+        <!-- Lista de tareas -->
         <section aria-label="Lista de tareas" id="tasksContainer" class="space-y-4">
         </section>
+
+        <!-- BOTONES MASIVOS -->
+        <div class="mt-8 pt-6 border-t border-amber-900/20 dark:border-amber-400/30 flex flex-col md:flex-row gap-3">
+          <button id="selectAllBtn" class="flex-1 py-3 px-4 rounded-xl bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition font-bold shadow-md">
+            ☑ Seleccionar Todo
+          </button>
+          <div class="flex flex-1 gap-3">
+            <button id="completeActionBtn" class="flex-1 py-3 px-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition font-bold shadow-md">
+              ✓ Completar Todas
+            </button>
+            <button id="deleteActionBtn" class="flex-1 py-3 px-2 rounded-xl bg-red-100/80 dark:bg-red-900/40 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800 transition font-bold shadow-md">
+              🗑 Borrar Hechas
+            </button>
+          </div>
+        </div>
+
       </main>
     </div>
 
     <!-- COLUMNA DERECHA: Barra Lateral -->
     <aside class="w-full md:w-80 lg:w-96 shrink-0 flex flex-col gap-6">
-      
-      <div class="sticky top-6 flex flex-col gap-6">
+      <!-- Añadido max-h y overflow para que flote bien -->
+      <div class="sticky top-6 flex flex-col gap-6 max-h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar pb-4">
         
         <!-- CAJA 1: Controles -->
         <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4">
-          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Controles</h2>
+          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Filtros</h2>
           
           <div class="search-container relative">
             <input type="search" id="searchInput" placeholder="🔍 Buscar tareas..." aria-label="Buscar tareas" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/70 dark:bg-zinc-900/80 px-3 py-2 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70">
           </div>
 
           <div class="flex flex-wrap gap-2 pt-2" id="statusFiltersContainer"></div>
-
-          <div class="mt-4 pt-4 border-t border-amber-900/20 dark:border-amber-400/30 flex flex-col gap-2">
-            <button id="selectAllBtn" class="w-full text-xs py-2 px-1 rounded-md bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition font-semibold shadow-sm">
-              ☑ Seleccionar Todo
-            </button>
-            <div class="flex gap-2">
-              <button id="completeActionBtn" class="flex-1 text-[11px] sm:text-xs py-2 px-1 rounded-md bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition font-semibold shadow-sm">
-                ✓ Completar Todas
-              </button>
-              <button id="deleteActionBtn" class="flex-1 text-[11px] sm:text-xs py-2 px-1 rounded-md bg-red-100/80 dark:bg-red-900/40 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800 transition font-semibold shadow-sm">
-                🗑 Borrar Hechas
-              </button>
-            </div>
-          </div>
           
-          <button id="themeToggleMobile" aria-label="Cambiar tema" class="lg:hidden w-full p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-xl hover:scale-105 transition-all text-white font-bold text-sm">
+          <button id="themeToggleMobile" aria-label="Cambiar tema" class="lg:hidden w-full p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-xl hover:scale-105 transition-all text-white font-bold text-sm mt-2">
             <span id="sunIconMobile" class="hidden">☀️ Modo Claro</span>
             <span id="moonIconMobile">🌙 Modo Oscuro</span>
           </button>
         </div>
 
         <!-- CAJA 2: Categorías -->
-        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-3">
+        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-3 shrink-0">
           <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center mb-1">Categorías</h2>
-          <div class="category-filters flex flex-wrap gap-1.5 max-h-32 overflow-y-auto px-1" id="categoryFilterContainer">
-            <!-- Categorías inyectadas -->
+          <div class="category-filters flex flex-wrap gap-1.5 max-h-40 overflow-y-auto px-1 custom-scrollbar" id="categoryFilterContainer">
           </div>
         </div>
 
         <!-- CAJA 3: Estadísticas -->
-        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4">
+        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4 shrink-0">
           <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Estadísticas</h2>
           <div class="flex justify-between text-sm sm:text-base text-inksoft dark:text-amber-100 px-2">
             <div class="flex flex-col items-center">
@@ -200,13 +212,13 @@
 
       renderCategoryFilters() {
         const container = document.getElementById('categoryFilterContainer');
-        const datalist = document.getElementById('categoryOptions');
+        const catSelect = document.getElementById('newCategorySelect'); 
         
         const cats = ['all'];
         this.tasks.forEach(t => { if (!cats.includes(t.category)) cats.push(t.category); });
 
         let buttonsHTML = '';
-        let datalistHTML = '';
+        let selectHTML = '';
 
         cats.forEach(cat => {
           const isActive = this.currentCategory === cat;
@@ -214,21 +226,33 @@
           let btnClass = "";
 
           if (cat === 'all') {
-            btnClass = isActive 
-              ? "active bg-amber-200/90 dark:bg-amber-700/80 border-amber-900/60 text-amber-900 dark:text-amber-50" 
-              : "bg-amber-100/60 dark:bg-amber-800/40 border-amber-900/30 text-amber-800 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-800/60";
+            btnClass = isActive ? "active bg-amber-200/90 dark:bg-amber-700/80 border-amber-900/60 text-amber-900 dark:text-amber-50" : "bg-amber-100/60 dark:bg-amber-800/40 border-amber-900/30 text-amber-800 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-800/60";
           } else {
-            btnClass = isActive 
-              ? "active bg-blue-200/90 dark:bg-blue-800/80 border-blue-600/60 text-blue-900 dark:text-blue-50" 
-              : "bg-blue-50/70 dark:bg-blue-900/40 border-blue-400/50 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800/60";
+            btnClass = isActive ? "active bg-blue-200/90 dark:bg-blue-800/80 border-blue-600/60 text-blue-900 dark:text-blue-50" : "bg-blue-50/70 dark:bg-blue-900/40 border-blue-400/50 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800/60";
+            selectHTML += `<option value="${cat}" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-amber-100">${cat}</option>`;
           }
-          
           buttonsHTML += `<button class="cat-filter-btn ${btnClass} text-xs font-semibold px-3 py-1.5 rounded-full border shadow-sm transition min-w-[55px]" data-category="${cat}">${label}</button>`;
-          if (cat !== 'all') datalistHTML += `<option value="${cat}" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-amber-100">`;
         });
 
+        selectHTML += `<option value="nueva" class="bg-amber-200 dark:bg-zinc-700 text-amber-900 dark:text-amber-50 font-bold">➕ Escribir nueva...</option>`;
+
         container.innerHTML = buttonsHTML;
-        if (datalist) datalist.innerHTML = datalistHTML;
+        
+        if (catSelect) {
+          const currentVal = catSelect.value;
+          catSelect.innerHTML = selectHTML;
+          if (cats.includes(currentVal) && currentVal !== 'nueva') catSelect.value = currentVal;
+          else catSelect.value = cats.length > 1 ? cats[1] : 'General';
+        }
+        
+        // Lógica para mostrar la 'X' de cancelar al escribir
+        const textInput = document.getElementById('newCategoryText');
+        const cancelBtn = document.getElementById('cancelNewCatBtn');
+        if (textInput && cancelBtn) {
+            const toggleCancel = () => cancelBtn.classList.toggle('hidden', textInput.classList.contains('hidden'));
+            textInput.addEventListener('input', toggleCancel);
+            if(catSelect) catSelect.addEventListener('change', toggleCancel);
+        }
       }
 
       generateTaskHTML(task) {
@@ -239,7 +263,6 @@
 
         return `
           <article data-id="${task.id}" draggable="true" class="task-item cursor-move relative bg-gradient-to-br from-amber-50/80 via-amber-100/60 to-amber-50/70 dark:from-zinc-800/70 dark:via-zinc-700/60 dark:to-zinc-800/50 border border-amber-800/30 dark:border-amber-400/40 border-l-8 border-amber-900/60 dark:border-amber-300/50 shadow-[8px_8px_16px_rgba(0,0,0,0.3)] rounded-2xl p-6 pt-8 pb-6 transition-all duration-200 ${isSelected ? 'ring-2 ring-blue-500/60 dark:ring-blue-400/60 scale-[1.01]' : ''}">
-
             
             <!-- SELECCIONAR TAREA -->
             <div class="absolute -top-3 -left-4 z-10">
@@ -266,7 +289,7 @@
                 <button class="ml-2 mt-1 text-sm text-inksoft hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition" onclick="organizator.editTask('${task.id}')" aria-label="Editar el título de la tarea" title="Editar Tarea">✏️</button>
               </div>
 
-                            <!-- Selector de Prioridad oculto pero nativo -->
+              <!-- Selector de Prioridad oculto pero nativo -->
               <label class="self-start w-fit relative shrink-0 inline-flex items-center gap-2 text-xs sm:text-sm rounded-full border border-amber-900/50 dark:border-amber-400/60 bg-amber-50/80 dark:bg-zinc-900/80 px-4 py-2 cursor-pointer group hover:bg-amber-100/50">
                 Prioridad: 
                 <span class="text-xs font-semibold px-2 py-1 rounded-full ml-1 text-white ${prioConfig.color}">${prioConfig.text}</span>
@@ -277,12 +300,12 @@
                 </select>
               </label>
 
-
               <button aria-label="Eliminar esta tarea" class="absolute -top-3 -right-4 w-7 h-7 rounded-full bg-red-700 text-amber-50 text-sm font-bold shadow-md hover:shadow-lg hover:bg-red-800 transition" onclick="organizator.deleteTask('${task.id}')">✕</button>
             </div>
 
             <p class="text-xs sm:text-sm text-amber-700/80 dark:text-amber-300/70 font-serif italic mt-auto pt-2 flex items-center gap-2 pr-14">
               📓 <span>${task.category}</span>
+              <button type="button" class="text-[11px] text-inksoft hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition" onclick="organizator.editCategory('${task.id}')" aria-label="Editar Categoría" title="Editar Categoría">✏️</button>
             </p>
           </article>
         `;
@@ -342,25 +365,20 @@
           }
         });
 
-                // --- EVENTOS DE DRAG & DROP ---
+        // --- EVENTOS DE DRAG & DROP ---
         const dndContainer = document.getElementById('tasksContainer');
-        
         dndContainer.addEventListener('dragstart', e => {
           const item = e.target.closest('.task-item');
           if (!item) return;
           this.draggedId = item.dataset.id;
-          // Efecto visual ao arrastar
           setTimeout(() => item.classList.add('opacity-40', 'scale-95'), 0);
         });
 
-        dndContainer.addEventListener('dragover', e => {
-          e.preventDefault(); // Obligatório para el HTML permitir soltar (drop)
-        });
+        dndContainer.addEventListener('dragover', e => { e.preventDefault(); });
 
         dndContainer.addEventListener('drop', e => {
           e.preventDefault();
           const item = e.target.closest('.task-item');
-          // Si se suelta encima de una tarea distinta
           if (item && this.draggedId && item.dataset.id !== this.draggedId) {
             this.reorderTasks(this.draggedId, item.dataset.id);
           }
@@ -368,21 +386,16 @@
 
         dndContainer.addEventListener('dragend', e => {
           const item = e.target.closest('.task-item');
-          // Remueve el efecto visual
           if (item) item.classList.remove('opacity-40', 'scale-95');
           this.draggedId = null;
         });
-
       }
 
       loadTheme() {
         const isDark = localStorage.getItem('theme') === 'dark';
         document.documentElement.classList.toggle('dark', isDark);
         document.documentElement.classList.toggle('light', !isDark);
-        
-        // Cambia el color scheme nativo del navegador
         document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-        
         ['sunIcon', 'sunIconMobile'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !isDark));
         ['moonIcon', 'moonIconMobile'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', isDark));
       }
@@ -395,16 +408,33 @@
 
       addTask() {
         const text = document.getElementById('newTaskInput').value.trim();
-        const category = document.getElementById('newCategoryInput').value.trim() || 'General';
         const priority = document.getElementById('newPriorityInput').value || 'medium';
+        const selectEl = document.getElementById('newCategorySelect');
+        const textEl = document.getElementById('newCategoryText');
         
         if (!text) return;
+
+        let category = 'General';
+        if (!textEl.classList.contains('hidden') && textEl.value.trim() !== '') {
+            category = textEl.value.trim();
+        } else if (selectEl && selectEl.value && selectEl.value !== 'nueva') {
+            category = selectEl.value;
+        }
+
         this.tasks.unshift({ id: Date.now().toString(), text, category, priority, completed: false });
         this.saveTasks();
         
+        // Reset interfaz
         document.getElementById('newTaskInput').value = ''; 
-        document.getElementById('newCategoryInput').value = ''; 
         document.getElementById('newPriorityInput').value = 'medium';
+        if(textEl) {
+            textEl.value = '';
+            textEl.classList.add('hidden');
+        }
+        const cancelBtn = document.getElementById('cancelNewCatBtn');
+        if(cancelBtn) cancelBtn.classList.add('hidden');
+        if(selectEl) selectEl.classList.remove('hidden');
+        
         document.getElementById('newTaskInput').focus();
         this.render();
       }
@@ -414,6 +444,18 @@
         if (task) {
           const newText = prompt("Edita la tarea:", task.text);
           if (newText && newText.trim()) { task.text = newText.trim(); this.saveTasks(); this.render(); }
+        }
+      }
+
+      editCategory(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+          const newCat = prompt("Edita el nombre de la categoría:", task.category);
+          if (newCat && newCat.trim()) { 
+            task.category = newCat.trim(); 
+            this.saveTasks(); 
+            this.render(); 
+          }
         }
       }
 
@@ -448,16 +490,13 @@
       reorderTasks(draggedId, targetId) {
         const draggedIndex = this.tasks.findIndex(t => t.id === draggedId);
         const targetIndex = this.tasks.findIndex(t => t.id === targetId);
-        
         if (draggedIndex > -1 && targetIndex > -1) {
           const [draggedTask] = this.tasks.splice(draggedIndex, 1);
           this.tasks.splice(targetIndex, 0, draggedTask);
-          
           this.saveTasks();
           this.render();
         }
       }
-
 
       toggleSelection(taskId) {
         this.selectedTasks.has(taskId) ? this.selectedTasks.delete(taskId) : this.selectedTasks.add(taskId);
@@ -473,10 +512,14 @@
       }
 
       executeCompleteAction() {
-        const targets = this.selectedTasks.size > 0 ? this.tasks.filter(t => this.selectedTasks.has(t.id)) : this.tasks.filter(t => this.matchesFilter(t));
-        targets.forEach(t => t.completed = true);
+        const fTasks = this.tasks.filter(t => this.matchesFilter(t));
+        const targets = this.selectedTasks.size > 0 ? this.tasks.filter(t => this.selectedTasks.has(t.id)) : fTasks;
+        if (targets.length === 0) return;
+        const allCompleted = targets.every(t => t.completed);
+        targets.forEach(t => t.completed = !allCompleted);
         this.selectedTasks.clear();
-        this.saveTasks(); this.render();
+        this.saveTasks(); 
+        this.render();
       }
 
       executeDeleteAction() {
@@ -498,14 +541,20 @@
         const selBtn = document.getElementById('selectAllBtn');
         const compBtn = document.getElementById('completeActionBtn');
         const delBtn = document.getElementById('deleteActionBtn');
+        if (!selBtn || !compBtn || !delBtn) return; 
+
         const fTasks = this.tasks.filter(t => this.matchesFilter(t));
+        const allSelected = fTasks.length > 0 && fTasks.every(t => this.selectedTasks.has(t.id));
+        selBtn.innerHTML = allSelected ? '☐ Desmarcar Todo' : '☑ Seleccionar Todo';
         
-        selBtn.innerHTML = (fTasks.length > 0 && fTasks.every(t => this.selectedTasks.has(t.id))) ? '☐ Desmarcar Todo' : '☑ Seleccionar Todo';
+        const targets = this.selectedTasks.size > 0 ? this.tasks.filter(t => this.selectedTasks.has(t.id)) : fTasks;
+        const allCompleted = targets.length > 0 && targets.every(t => t.completed);
+
         if (this.selectedTasks.size > 0) {
-          compBtn.innerHTML = `✓ Completar Sel. (${this.selectedTasks.size})`;
+          compBtn.innerHTML = allCompleted ? `⟲ Pendientes Sel. (${this.selectedTasks.size})` : `✓ Completar Sel. (${this.selectedTasks.size})`;
           delBtn.innerHTML = `🗑 Borrar Sel. (${this.selectedTasks.size})`;
         } else {
-          compBtn.innerHTML = '✓ Completar Todas';
+          compBtn.innerHTML = (allCompleted && fTasks.length > 0) ? '⟲ Pendientes Todas' : '✓ Completar Todas';
           delBtn.innerHTML = '🗑 Borrar Hechas';
         }
       }
