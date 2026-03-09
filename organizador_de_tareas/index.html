@@ -433,10 +433,16 @@
       }
 
       deleteTask(taskId) {
-        this.tasks = this.tasks.filter(t => t.id !== taskId);
-        this.selectedTasks.delete(taskId);
-        this.expandedTasks.delete(taskId);
-        this.saveTasks(); this.render();
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        if (confirm(`¿Deseas eliminar la tarea:\n"${task.text}"?`)) {
+          this.tasks = this.tasks.filter(t => t.id !== taskId);
+          this.selectedTasks.delete(taskId);
+          this.expandedTasks.delete(taskId);
+          this.saveTasks(); 
+          this.render();
+        }
       }
 
       reorderTasks(draggedId, targetId) {
