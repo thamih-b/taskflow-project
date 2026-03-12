@@ -6,9 +6,23 @@
   <title>Organizador de Tareas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Scrollbar oculta pero funcional para la barra lateral */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .progress-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .subtasks-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.32s ease;
+    }
+    .subtasks-panel.open { grid-template-rows: 1fr; }
+    .subtasks-inner { overflow: hidden; }
+    #langDropdown { display: none; }
+    #langDropdown.open { display: flex; }
+    .lang-option { transition: background 0.12s; }
+    .lang-option:hover { background: rgba(180,83,9,0.1); }
+    .dark .lang-option:hover { background: rgba(251,191,36,0.1); }
+    .lang-option.active-lang { background: rgba(180,83,9,0.14); font-weight: 700; }
+    .dark .lang-option.active-lang { background: rgba(251,191,36,0.14); }
   </style>
   <script>
     tailwind.config = {
@@ -16,13 +30,11 @@
       theme: {
         extend: {
           colors: {
-            parchment: { DEFAULT: '#f5ecd6', dark: '#1c1917' },
+            parchment: { DEFAULT: '#f5ecd6' },
             ink: '#1f2933',
-            inksoft: { DEFAULT: '#6b7280', dark: '#f3f4f6' }
+            inksoft: { DEFAULT: '#6b7280' }
           },
-          fontFamily: {
-            mono: ['"Courier New"', 'Consolas', 'monospace']
-          }
+          fontFamily: { mono: ['"Courier New"', 'Consolas', 'monospace'] }
         }
       }
     }
@@ -30,554 +42,714 @@
 </head>
 
 <body class="min-h-screen font-mono text-ink dark:text-zinc-100 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.12),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.18),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.6),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(0,0,0,0.8),_transparent_65%)] transition-colors duration-300">
-  
-  <div class="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row gap-6 lg:gap-12 px-8 sm:px-10 md:px-12 lg:px-16 items-start py-6 md:py-10">
-    
-    <!-- COLUMNA IZQUIERDA: Tareas -->
+
+  <!-- ═══ LANGUAGE DROPDOWN — fixed top-right ═══ -->
+  <div class="absolute top-4 right-4 z-50" id="langWidget">
+    <button id="langToggleBtn"
+      class="flex items-center gap-2 px-3 py-2 rounded-xl bg-parchment/97 dark:bg-zinc-900/97 border-2 border-amber-900/40 dark:border-amber-600/50 shadow-lg hover:shadow-xl transition-all text-sm font-semibold text-amber-900 dark:text-amber-100"
+      onclick="document.getElementById('langDropdown').classList.toggle('open')">
+      <span id="langCurrentFlag">🇪🇸</span>
+      <span id="langCurrentCode" class="tracking-wider text-xs">ES</span>
+      <span class="text-[9px] text-amber-700/60 dark:text-amber-400/60">▼</span>
+    </button>
+    <div id="langDropdown"
+      class="absolute right-0 top-full mt-1.5 flex-col w-40 rounded-xl overflow-hidden bg-parchment/99 dark:bg-zinc-900/99 border border-amber-900/25 dark:border-amber-600/35 shadow-2xl">
+      <button class="lang-option active-lang flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="es"
+        onclick="organizator.setLanguage('es');document.getElementById('langDropdown').classList.remove('open')">
+        <span class="text-base">🇪🇸</span><span>Español</span>
+      </button>
+      <button class="lang-option flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="pt"
+        onclick="organizator.setLanguage('pt');document.getElementById('langDropdown').classList.remove('open')">
+        <span class="text-base">🇧🇷</span><span>Português</span>
+      </button>
+      <button class="lang-option flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="en"
+        onclick="organizator.setLanguage('en');document.getElementById('langDropdown').classList.remove('open')">
+        <span class="text-base">🇺🇸</span><span>English</span>
+      </button>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('click', e => {
+      const w = document.getElementById('langWidget');
+      if (w && !w.contains(e.target)) document.getElementById('langDropdown')?.classList.remove('open');
+    });
+  </script>
+
+  <div class="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row gap-6 lg:gap-12 px-4 sm:px-8 md:px-12 lg:px-16 items-start py-6 md:py-10">
+
+    <!-- ═══ COLUNA ESQUERDA ═══ -->
     <div class="flex-1 w-full bg-parchment/95 dark:bg-zinc-900/90 border border-amber-900/40 dark:border-amber-700/40 shadow-[0_20px_60px_rgba(0,0,0,0.45)] rounded-xl relative overflow-hidden">
       <div class="pointer-events-none absolute inset-3 border border-amber-900/50 dark:border-amber-600/50 rounded-xl" aria-hidden="true"></div>
 
       <header class="relative px-6 sm:px-10 py-8 sm:py-10 border-b border-amber-900/40 dark:border-amber-700/40 bg-gradient-to-br from-amber-200/70 via-amber-100/90 to-amber-50/80 dark:from-amber-900/60 dark:via-amber-800/70 dark:to-amber-700/50 overflow-hidden lg:pb-2">
         <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full border border-amber-800/40 dark:border-amber-300/30 blur-sm" aria-hidden="true"></div>
         <div class="absolute -left-16 bottom-0 w-40 h-40 rounded-full border border-amber-900/40 dark:border-amber-400/30 blur-[2px]" aria-hidden="true"></div>
-
         <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl sm:text-4xl tracking-[0.2em] uppercase font-semibold text-amber-900 dark:text-amber-100 drop-shadow-sm">Organizador de Tareas</h1>
-            <p class="mt-2 text-sm sm:text-base text-inksoft dark:text-amber-100/80">Un presente organizado es un futuro seguro.</p>
+            <h1 id="appTitle" class="text-3xl sm:text-4xl tracking-[0.2em] uppercase font-semibold text-amber-900 dark:text-amber-100 drop-shadow-sm">Organizador de Tareas</h1>
+            <p id="appSubtitle" class="mt-2 text-sm sm:text-base text-[#6b7280] dark:text-amber-100/80">Un presente organizado es un futuro seguro.</p>
           </div>
-          <button id="themeToggle" type="button" aria-label="Cambiar tema claro u oscuro" class="hidden lg:block p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-2xl hover:scale-105 transition-all duration-300 text-white font-bold text-sm absolute lg:static top-4 right-4 z-20">
+          <button id="themeToggle" type="button"
+            class="hidden lg:block p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-2xl hover:scale-105 transition-all duration-300 text-white font-bold text-sm">
             <span id="sunIcon" class="hidden">☀️ Modo Claro</span>
             <span id="moonIcon">🌙 Modo Oscuro</span>
           </button>
         </div>
       </header>
 
-      <main class="relative px-8 sm:px-10 py-6 sm:py-8">
+      <main class="relative px-5 sm:px-10 py-6 sm:py-8">
 
-        <!-- Agregar nueva tarea -->
-        <section aria-label="Agregar nueva tarea" class="mb-8">
-          <div class="task-input-container flex flex-col lg:flex-row gap-3 lg:gap-4 items-stretch lg:items-end">
-            <input type="text" id="newTaskInput" placeholder="Escribe la tarea..." aria-label="Título de nueva tarea" class="task-input flex-[2] rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
-            
-            <!-- Contenedor de Categoría Dinámico -->
+        <!-- ── FORM: nova tarefa ── -->
+        <section class="mb-8">
+          <!-- Fila 1: tarefa + categoria + prioridade + botão -->
+          <div class="flex flex-col lg:flex-row gap-3 lg:gap-4 items-stretch lg:items-end">
+            <input type="text" id="newTaskInput" data-i18n-placeholder="taskPlaceholder" placeholder="Escribe la tarea..."
+              class="flex-[2] rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
             <div class="flex-1 relative flex items-center">
-              <select id="newCategorySelect" aria-label="Seleccionar Categoría" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer" onchange="if(this.value === 'nueva'){ this.classList.add('hidden'); document.getElementById('newCategoryText').classList.remove('hidden'); document.getElementById('newCategoryText').focus(); }">
-                <!-- JS inyecta opciones aquí -->
+              <select id="newCategorySelect"
+                class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer"
+                onchange="if(this.value==='nueva'){this.classList.add('hidden');document.getElementById('newCategoryText').classList.remove('hidden');document.getElementById('newCategoryText').focus();}">
               </select>
-              <input type="text" id="newCategoryText" placeholder="Nueva categoría..." aria-label="Escribir nueva categoría" class="w-full hidden rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
-              <!-- Botón para cancelar la escritura -->
-              <button type="button" onclick="document.getElementById('newCategoryText').classList.add('hidden'); document.getElementById('newCategoryText').value=''; document.getElementById('newCategorySelect').classList.remove('hidden'); document.getElementById('newCategorySelect').selectedIndex=0;" class="absolute right-2 text-red-500 font-bold hidden hover:scale-110" id="cancelNewCatBtn" aria-label="Cancelar nueva categoría">✕</button>
+              <input type="text" id="newCategoryText" data-i18n-placeholder="newCategoryPlaceholder" placeholder="Nueva categoría..."
+                class="w-full hidden rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition">
+              <button type="button" id="cancelNewCatBtn"
+                onclick="document.getElementById('newCategoryText').classList.add('hidden');document.getElementById('newCategoryText').value='';document.getElementById('newCategorySelect').classList.remove('hidden');document.getElementById('newCategorySelect').selectedIndex=0;"
+                class="absolute right-2 text-red-500 font-bold hidden hover:scale-110">✕</button>
             </div>
-
-            <!-- Selector de Prioridad -->
-            <select id="newPriorityInput" aria-label="Prioridad de la tarea" class="flex-1 rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer">
-              <option value="high" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-zinc-100">Prioridad: Alta</option>
-              <option value="medium" selected class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-zinc-100">Prioridad: Media</option>
-              <option value="low" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-zinc-100">Prioridad: Baja</option>
+            <select id="newPriorityInput"
+              class="flex-1 rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/60 dark:bg-zinc-900/80 px-3 py-3 text-sm text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70 transition cursor-pointer">
+              <option value="high">Prioridad: Alta</option>
+              <option value="medium" selected>Prioridad: Media</option>
+              <option value="low">Prioridad: Baja</option>
             </select>
-
-            <button id="addTaskBtn" aria-label="Añadir nueva tarea" type="button" class="add-btn inline-flex justify-center items-center rounded-md bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-amber-950 font-semibold text-sm px-5 py-3 shadow-lg shadow-amber-800/30 hover:shadow-amber-800/50 active:scale-[0.97] transition">
+            <button id="addTaskBtn" type="button"
+              class="inline-flex justify-center items-center rounded-md bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-amber-950 font-semibold text-sm px-5 py-3 shadow-lg shadow-amber-800/30 hover:shadow-amber-800/50 active:scale-[0.97] transition" data-i18n="addBtn">
               Agregar
             </button>
+          </div>
+          <!-- Fila 2: subtarefa rápida -->
+          <div class="flex items-center gap-3 mt-3">
+            <span class="shrink-0 flex items-center gap-1.5 text-xs text-amber-700/65 dark:text-amber-400/60 font-semibold uppercase tracking-wider pl-1 select-none">
+              ↳ <span data-i18n="subtasksToggle">Subtareas</span>
+            </span>
+            <input type="text" id="newSubtaskInput" data-i18n-placeholder="addSubtaskPlaceholder" placeholder="Nueva subtarea (opcional)..."
+              class="flex-1 rounded-md border border-amber-900/25 dark:border-amber-600/35 bg-amber-50/40 dark:bg-zinc-900/60 px-3 py-2.5 text-sm text-[#6b7280] dark:text-amber-100/90 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400/55 transition">
           </div>
         </section>
 
         <!-- Lista de tareas -->
-        <section aria-label="Lista de tareas" id="tasksContainer" class="space-y-4">
-        </section>
+        <section id="tasksContainer" class="space-y-4"></section>
 
-        <!-- BOTONES MASIVOS -->
+        <!-- BOTÕES MASIVOS -->
         <div class="mt-8 pt-6 border-t border-amber-900/20 dark:border-amber-400/30 flex flex-col md:flex-row gap-3">
-          <button id="selectAllBtn" class="flex-1 py-3 px-4 rounded-xl bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition font-bold shadow-md">
+          <button id="selectAllBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition font-bold shadow-md" data-i18n="selectAll">
             ☑ Seleccionar Todo
           </button>
           <div class="flex flex-1 gap-3">
-            <button id="completeActionBtn" class="flex-1 py-3 px-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition font-bold shadow-md">
+            <button id="completeActionBtn"
+              class="flex-1 py-3 px-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition font-bold shadow-md" data-i18n="completeAll">
               ✓ Completar Todas
             </button>
-            <button id="deleteActionBtn" class="flex-1 py-3 px-2 rounded-xl bg-red-100/80 dark:bg-red-900/40 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800 transition font-bold shadow-md">
+            <button id="deleteActionBtn"
+              class="flex-1 py-3 px-2 rounded-xl bg-red-100/80 dark:bg-red-900/40 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800 transition font-bold shadow-md" data-i18n="deleteDone">
               🗑 Borrar Hechas
             </button>
           </div>
         </div>
-
       </main>
     </div>
 
-    <!-- COLUMNA DERECHA: Barra Lateral -->
+    <!-- ═══ BARRA LATERAL ═══ -->
     <aside class="w-full md:w-80 lg:w-96 shrink-0 flex flex-col gap-6">
-      <!-- Añadido max-h y overflow para que flote bien -->
       <div class="sticky top-6 flex flex-col gap-6 max-h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar pb-4">
-        
-        <!-- CAJA 1: Controles -->
-        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4">
-          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Filtros</h2>
-          
-          <div class="search-container relative">
-            <input type="search" id="searchInput" placeholder="🔍 Buscar tareas..." aria-label="Buscar tareas" class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/70 dark:bg-zinc-900/80 px-3 py-2 text-sm text-inksoft dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70">
-          </div>
 
-          <div class="flex flex-wrap gap-2 pt-2" id="statusFiltersContainer"></div>
-          
-          <button id="themeToggleMobile" aria-label="Cambiar tema" class="lg:hidden w-full p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-xl hover:scale-105 transition-all text-white font-bold text-sm mt-2">
+        <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4">
+          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center" data-i18n="filtersTitle">Filtros</h2>
+          <input type="search" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="🔍 Buscar tareas..."
+            class="w-full rounded-md border border-amber-900/40 dark:border-amber-600/60 bg-amber-50/70 dark:bg-zinc-900/80 px-3 py-2 text-sm text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/70">
+          <div class="flex flex-wrap gap-2 pt-1" id="statusFiltersContainer"></div>
+          <button id="themeToggleMobile"
+            class="lg:hidden w-full p-3 rounded-xl bg-amber-400/90 border-4 border-amber-900/50 shadow-xl hover:scale-105 transition-all text-white font-bold text-sm mt-2">
             <span id="sunIconMobile" class="hidden">☀️ Modo Claro</span>
             <span id="moonIconMobile">🌙 Modo Oscuro</span>
           </button>
         </div>
 
-        <!-- CAJA 2: Categorías -->
         <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-3 shrink-0">
-          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center mb-1">Categorías</h2>
-          <div class="category-filters flex flex-wrap gap-1.5 max-h-40 overflow-y-auto px-1 custom-scrollbar" id="categoryFilterContainer">
-          </div>
+          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center mb-1" data-i18n="categoriesTitle">Categorías</h2>
+          <div class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto px-1" id="categoryFilterContainer"></div>
         </div>
 
-        <!-- CAJA 3: Estadísticas -->
         <div class="bg-parchment/95 dark:bg-zinc-900/95 border border-amber-900/40 dark:border-amber-700/50 rounded-xl shadow-lg px-4 py-5 space-y-4 shrink-0">
-          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center">Estadísticas</h2>
-          <div class="flex justify-between text-sm sm:text-base text-inksoft dark:text-amber-100 px-2">
+          <h2 class="text-lg font-semibold tracking-[0.2em] text-amber-900 dark:text-amber-100 uppercase text-center" data-i18n="statsTitle">Estadísticas</h2>
+          <div class="flex justify-between text-sm text-[#6b7280] dark:text-amber-100 px-2">
             <div class="flex flex-col items-center">
-              <span class="text-xs uppercase tracking-wider">Total</span>
+              <span class="text-xs uppercase tracking-wider" data-i18n="statTotal">Total</span>
               <span id="statTotal" class="font-bold text-xl text-amber-900 dark:text-amber-300">0</span>
             </div>
             <div class="flex flex-col items-center">
-              <span class="text-xs uppercase tracking-wider">Hechas</span>
+              <span class="text-xs uppercase tracking-wider" data-i18n="statDone">Hechas</span>
               <span id="statCompleted" class="font-bold text-xl text-emerald-600 dark:text-emerald-400">0</span>
             </div>
             <div class="flex flex-col items-center">
-              <span class="text-xs uppercase tracking-wider">Pendientes</span>
+              <span class="text-xs uppercase tracking-wider" data-i18n="statPending">Pendientes</span>
               <span id="statPending" class="font-bold text-xl text-red-600 dark:text-red-400">0</span>
             </div>
           </div>
         </div>
-
       </div>
     </aside>
   </div>
 
   <script>
-    class Organizator {
-      constructor() {
-        this.tasks = JSON.parse(localStorage.getItem('organizator-tasks')) || [];
-        this.currentFilter = 'all';
-        this.currentCategory = 'all';
-        this.searchTerm = '';
-        this.selectedTasks = new Set(); 
-        this.expandedTasks = new Set(); 
-        
-        this.statusFilters = [
-          { id: 'all', label: 'Todas', color: 'amber' },
-          { id: 'high', label: 'Alta', color: 'red' },
-          { id: 'medium', label: 'Media', color: 'amber' },
-          { id: 'low', label: 'Baja', color: 'emerald' },
-          { id: 'completed', label: 'Hechas', color: 'zinc' },
-          { id: 'pending', label: 'Pendientes', color: 'blue' }
-        ];
+  const I18N = {
+    es: {
+      appTitle:'Organizador de Tareas', appSubtitle:'Un presente organizado es un futuro seguro.',
+      lightMode:'Modo Claro', darkMode:'Modo Oscuro',
+      taskPlaceholder:'Escribe la tarea...', newCategoryPlaceholder:'Nueva categoría...',
+      addSubtaskPlaceholder:'Nueva subtarea (opcional)...',
+      priorityHigh:'Prioridad: Alta', priorityMedium:'Prioridad: Media', priorityLow:'Prioridad: Baja', priorityLabel: 'Prioridad: ',
+      addBtn:'Agregar', selectAll:'☑ Seleccionar Todo', deselectAll:'☐ Desmarcar Todo',
+      completeAll:'✓ Completar Todas', deleteDone:'🗑 Borrar Hechas',
+      filtersTitle:'Filtros', categoriesTitle:'Categorías', statsTitle:'Estadísticas',
+      statTotal:'Total', statDone:'Hechas', statPending:'Pendientes',
+      searchPlaceholder:'🔍 Buscar tareas...',
+      filterAll:'Todas', filterHigh:'Alta', filterMedium:'Media', filterLow:'Baja',
+      filterCompleted:'Hechas', filterPending:'Pendientes',
+      noTasks:'✨ No hay tareas', noTasksSearch:'✨ No hay tareas para tu búsqueda.',
+      taskListTitle:'Tareas',
+      confirmDelete:'¿Eliminar la tarea:\n"', confirmDeleteSuffix:'"?',
+      confirmDeleteMultiple:'¿Borrar ', confirmDeleteMultipleSuffix:' tarea(s) seleccionada(s)?',
+      confirmDeleteDone:'¿Borrar las ', confirmDeleteDoneSuffix:' tareas hechas?',
+      noTasksDone:'No hay tareas hechas para borrar.',
+      editTaskPrompt:'Edita la tarea:', editCategoryPrompt:'Edita el nombre de la categoría:',
+      prioHigh:'Alta', prioMedium:'Media', prioLow:'Baja',
+      subtasksTitle:'Subtareas', addSubtaskBtn:'Añadir', subtasksToggle:'Subtareas',
+      progressLabel:'Progreso', writeNew:'➕ Nueva categoría...',
+      expandMore:'Leer más ▼', expandLess:'Ver menos ▲',
+      completeSelected:'✓ Completar Sel.', pendingSelected:'⟲ Pendientes Sel.',
+      deleteSel:'🗑 Borrar Sel.', pendingAll:'⟲ Pendientes Todas',
+      confirmDeleteSubtask:'¿Eliminar esta subtarea?', markDone:'Hecha',
+    },
+    pt: {
+      appTitle:'Organizador de Tarefas', appSubtitle:'Um presente organizado é um futuro garantido.',
+      lightMode:'Modo Claro', darkMode:'Modo Escuro',
+      taskPlaceholder:'Escreva a tarefa...', newCategoryPlaceholder:'Nova categoria...',
+      addSubtaskPlaceholder:'Nova subtarefa (opcional)...',
+      priorityHigh:'Prioridade: Alta', priorityMedium:'Prioridade: Média', priorityLow:'Prioridade: Baixa', priorityLabel: 'Prioridade',  
+      addBtn:'Adicionar', selectAll:'☑ Selecionar Tudo', deselectAll:'☐ Desmarcar Tudo',
+      completeAll:'✓ Concluir Todas', deleteDone:'🗑 Apagar Concluídas',
+      filtersTitle:'Filtros', categoriesTitle:'Categorias', statsTitle:'Estatísticas',
+      statTotal:'Total', statDone:'Concluídas', statPending:'Pendentes',
+      searchPlaceholder:'🔍 Buscar tarefas...',
+      filterAll:'Todas', filterHigh:'Alta', filterMedium:'Média', filterLow:'Baixa',
+      filterCompleted:'Concluídas', filterPending:'Pendentes',
+      noTasks:'✨ Nenhuma tarefa', noTasksSearch:'✨ Nenhuma tarefa para sua busca.',
+      taskListTitle:'Tarefas',
+      confirmDelete:'Excluir a tarefa:\n"', confirmDeleteSuffix:'"?',
+      confirmDeleteMultiple:'Excluir ', confirmDeleteMultipleSuffix:' tarefa(s) selecionada(s)?',
+      confirmDeleteDone:'Excluir as ', confirmDeleteDoneSuffix:' tarefas concluídas?',
+      noTasksDone:'Não há tarefas concluídas para apagar.',
+      editTaskPrompt:'Edite a tarefa:', editCategoryPrompt:'Edite o nome da categoria:',
+      prioHigh:'Alta', prioMedium:'Média', prioLow:'Baixa',
+      subtasksTitle:'Subtarefas', addSubtaskBtn:'Adicionar', subtasksToggle:'Subtarefas',
+      progressLabel:'Progresso', writeNew:'➕ Nova categoria...',
+      expandMore:'Ler mais ▼', expandLess:'Ver menos ▲',
+      completeSelected:'✓ Concluir Sel.', pendingSelected:'⟲ Pendentes Sel.',
+      deleteSel:'🗑 Apagar Sel.', pendingAll:'⟲ Pendentes Todas',
+      confirmDeleteSubtask:'Excluir esta subtarefa?', markDone:'Concluída',
+    },
+    en: {
+      appTitle:'Task Organizer', appSubtitle:'An organized today is a secure tomorrow.',
+      lightMode:'Light Mode', darkMode:'Dark Mode',
+      taskPlaceholder:'Write a task...', newCategoryPlaceholder:'New category...',
+      addSubtaskPlaceholder:'New subtask (optional)...',
+      priorityHigh:'Priority: High', priorityMedium:'Priority: Medium', priorityLow:'Priority: Low', priorityLabel: 'Priority',
+      addBtn:'Add', selectAll:'☑ Select All', deselectAll:'☐ Deselect All',
+      completeAll:'✓ Complete All', deleteDone:'🗑 Delete Done',
+      filtersTitle:'Filters', categoriesTitle:'Categories', statsTitle:'Statistics',
+      statTotal:'Total', statDone:'Done', statPending:'Pending',
+      searchPlaceholder:'🔍 Search tasks...',
+      filterAll:'All', filterHigh:'High', filterMedium:'Medium', filterLow:'Low',
+      filterCompleted:'Done', filterPending:'Pending',
+      noTasks:'✨ No tasks', noTasksSearch:'✨ No tasks match your search.',
+      taskListTitle:'Tasks',
+      confirmDelete:'Delete this task?\n"', confirmDeleteSuffix:'"',
+      confirmDeleteMultiple:'Delete ', confirmDeleteMultipleSuffix:' selected task(s)?',
+      confirmDeleteDone:'Delete ', confirmDeleteDoneSuffix:' completed tasks?',
+      noTasksDone:'No completed tasks to delete.',
+      editTaskPrompt:'Edit the task:', editCategoryPrompt:'Edit the category name:',
+      prioHigh:'High', prioMedium:'Medium', prioLow:'Low',
+      subtasksTitle:'Subtasks', addSubtaskBtn:'Add', subtasksToggle:'Subtasks',
+      progressLabel:'Progress', writeNew:'➕ New category...',
+      expandMore:'Read more ▼', expandLess:'Show less ▲',
+      completeSelected:'✓ Complete Sel.', pendingSelected:'⟲ Pending Sel.',
+      deleteSel:'🗑 Delete Sel.', pendingAll:'⟲ Pending All',
+      confirmDeleteSubtask:'Delete this subtask?', markDone:'Done',
+    }
+  };
+  const LANG_META = { es:{flag:'🇪🇸',code:'ES'}, pt:{flag:'🇧🇷',code:'PT'}, en:{flag:'🇺🇸',code:'EN'} };
 
-        this.init();
-      }
-
-      init() {
-        this.loadTheme();
-        this.renderStatusFilters();
-        this.bindEvents();
-        this.render();
-      }
-
-      escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
-      }
-
-      getPriorityConfig(priority) {
-        const config = { 
-          high: { text: 'Alta', color: 'bg-red-500/90 border-red-400/50' },
-          medium: { text: 'Media', color: 'bg-amber-500/90 border-amber-600/50' },
-          low: { text: 'Baja', color: 'bg-emerald-500/90 border-emerald-600/50' }
-        };
-        return config[priority] || config.medium;
-      }
-
-      renderStatusFilters() {
-        const container = document.getElementById('statusFiltersContainer');
-        container.innerHTML = this.statusFilters.map(f => {
-          const isActive = this.currentFilter === f.id;
-          const baseClass = `filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border transition`;
-          const activeClass = isActive 
-            ? `active border-${f.color}-900/40 bg-${f.color}-100/80 dark:bg-${f.color}-700/70 text-inksoft dark:text-${f.color}-50 shadow-sm` 
-            : `border-${f.color}-700/60 bg-transparent text-${f.color}-800 dark:text-${f.color}-200 hover:bg-${f.color}-100/30`;
-          return `<button class="${baseClass} ${activeClass}" data-filter="${f.id}">${f.label}</button>`;
-        }).join('');
-      }
-
-      renderCategoryFilters() {
-        const container = document.getElementById('categoryFilterContainer');
-        const catSelect = document.getElementById('newCategorySelect'); 
-        
-        const cats = ['all'];
-        this.tasks.forEach(t => { if (!cats.includes(t.category)) cats.push(t.category); });
-
-        let buttonsHTML = '';
-        let selectHTML = '';
-
-        cats.forEach(cat => {
-          const isActive = this.currentCategory === cat;
-          const label = cat === 'all' ? 'Todas' : cat;
-          let btnClass = "";
-
-          if (cat === 'all') {
-            btnClass = isActive ? "active bg-amber-200/90 dark:bg-amber-700/80 border-amber-900/60 text-amber-900 dark:text-amber-50" : "bg-amber-100/60 dark:bg-amber-800/40 border-amber-900/30 text-amber-800 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-800/60";
-          } else {
-            btnClass = isActive ? "active bg-blue-200/90 dark:bg-blue-800/80 border-blue-600/60 text-blue-900 dark:text-blue-50" : "bg-blue-50/70 dark:bg-blue-900/40 border-blue-400/50 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800/60";
-            selectHTML += `<option value="${cat}" class="bg-amber-50 dark:bg-zinc-800 text-ink dark:text-amber-100">${cat}</option>`;
-          }
-          buttonsHTML += `<button class="cat-filter-btn ${btnClass} text-xs font-semibold px-3 py-1.5 rounded-full border shadow-sm transition min-w-[55px]" data-category="${cat}">${label}</button>`;
-        });
-
-        selectHTML += `<option value="nueva" class="bg-amber-200 dark:bg-zinc-700 text-amber-900 dark:text-amber-50 font-bold">➕ Escribir nueva...</option>`;
-
-        container.innerHTML = buttonsHTML;
-        
-        if (catSelect) {
-          const currentVal = catSelect.value;
-          catSelect.innerHTML = selectHTML;
-          if (cats.includes(currentVal) && currentVal !== 'nueva') catSelect.value = currentVal;
-          else catSelect.value = cats.length > 1 ? cats[1] : 'General';
-        }
-        
-        // Lógica para mostrar la 'X' de cancelar al escribir
-        const textInput = document.getElementById('newCategoryText');
-        const cancelBtn = document.getElementById('cancelNewCatBtn');
-        if (textInput && cancelBtn) {
-            const toggleCancel = () => cancelBtn.classList.toggle('hidden', textInput.classList.contains('hidden'));
-            textInput.addEventListener('input', toggleCancel);
-            if(catSelect) catSelect.addEventListener('change', toggleCancel);
-        }
-      }
-
-      generateTaskHTML(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isExpanded = this.expandedTasks.has(task.id);
-        const lineThrough = task.completed ? 'line-through opacity-60' : '';
-        const prioConfig = this.getPriorityConfig(task.priority);
-
-        return `
-          <article data-id="${task.id}" draggable="true" class="task-item cursor-move relative bg-gradient-to-br from-amber-50/80 via-amber-100/60 to-amber-50/70 dark:from-zinc-800/70 dark:via-zinc-700/60 dark:to-zinc-800/50 border border-amber-800/30 dark:border-amber-400/40 border-l-8 border-amber-900/60 dark:border-amber-300/50 shadow-[8px_8px_16px_rgba(0,0,0,0.3)] rounded-2xl p-6 pt-8 pb-6 transition-all duration-200 ${isSelected ? 'ring-2 ring-blue-500/60 dark:ring-blue-400/60 scale-[1.01]' : ''}">
-            
-            <!-- SELECCIONAR TAREA -->
-            <div class="absolute -top-3 -left-4 z-10">
-              <input type="checkbox" id="sel-${task.id}" aria-label="Seleccionar tarea" class="peer sr-only" ${isSelected ? 'checked' : ''} onchange="organizator.toggleSelection('${task.id}')">
-              <label for="sel-${task.id}" class="relative flex items-center justify-center w-6 h-6 rounded-full border-2 border-amber-900/40 dark:border-amber-400/40 bg-amber-50/90 dark:bg-zinc-800/90 shadow-md cursor-pointer hover:scale-110 transition-all peer-checked:border-blue-500 dark:peer-checked:border-blue-400 peer-checked:shadow-blue-500/20">
-                <span class="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 scale-0 peer-checked:scale-100 transition-transform duration-200"></span>
-              </label>
-            </div>
-
-            <!-- MARCAR COMO HECHA -->
-             <div class="absolute bottom-4 right-4 flex items-center gap-1.5 bg-amber-100/80 dark:bg-amber-700/70 px-3 py-1.5 rounded-md border-2 border-emerald-600/40 dark:border-emerald-400/40 shadow-lg cursor-pointer hover:bg-amber-200/90 dark:hover:bg-amber-600/80 transition z-2">
-              <input type="checkbox" id="task-chk-${task.id}" aria-label="Marcar tarea como completada" class="h-5 w-5 cursor-pointer accent-emerald-600" ${task.completed ? 'checked' : ''} onchange="organizator.toggleTask('${task.id}')">
-            </div>
-
-            <div class="task-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-4 border-b border-amber-900/20 dark:border-amber-400/30 mb-4 pr-4">
-              
-              <div class="flex-1 flex items-start min-w-0 pr-2">
-                <div class="flex-1 min-w-0">
-                  <p id="text-${task.id}" data-id="${task.id}" class="task-text text-base sm:text-lg font-serif italic text-amber-900/95 dark:text-amber-100/90 break-words whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-4 md:line-clamp-5'} ${lineThrough}">${this.escapeHTML(task.text)}</p>
-                  <button id="expand-btn-${task.id}" class="text-xs font-sans font-bold text-blue-700 dark:text-blue-400 hover:underline mt-1 hidden" onclick="organizator.toggleExpand('${task.id}')" aria-label="${isExpanded ? 'Ver menos texto' : 'Leer toda la tarea'}">
-                    ${isExpanded ? 'Ver menos ▲' : 'Leer más ▼'}
-                  </button>
-                </div>
-                <button class="ml-2 mt-1 text-sm text-inksoft hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition" onclick="organizator.editTask('${task.id}')" aria-label="Editar el título de la tarea" title="Editar Tarea">✏️</button>
-              </div>
-
-              <!-- Selector de Prioridad oculto pero nativo -->
-              <label class="self-start w-fit relative shrink-0 inline-flex items-center gap-2 text-xs sm:text-sm rounded-full border border-amber-900/50 dark:border-amber-400/60 bg-amber-50/80 dark:bg-zinc-900/80 px-4 py-2 cursor-pointer group hover:bg-amber-100/50">
-                Prioridad: 
-                <span class="text-xs font-semibold px-2 py-1 rounded-full ml-1 text-white ${prioConfig.color}">${prioConfig.text}</span>
-                <select aria-label="Cambiar prioridad" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" onchange="organizator.updatePriority('${task.id}', this.value)">
-                  <option value="high" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'high' ? 'selected' : ''}>Alta</option>
-                  <option value="medium" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'medium' ? 'selected' : ''}>Media</option>
-                  <option value="low" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
-                </select>
-              </label>
-
-              <button aria-label="Eliminar esta tarea" class="absolute -top-3 -right-4 w-7 h-7 rounded-full bg-red-700 text-amber-50 text-sm font-bold shadow-md hover:shadow-lg hover:bg-red-800 transition" onclick="organizator.deleteTask('${task.id}')">✕</button>
-            </div>
-
-            <p class="text-xs sm:text-sm text-amber-700/80 dark:text-amber-300/70 font-serif italic mt-auto pt-2 flex items-center gap-2 pr-14">
-              📓 <span>${task.category}</span>
-              <button type="button" class="text-[11px] text-inksoft hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition" onclick="organizator.editCategory('${task.id}')" aria-label="Editar Categoría" title="Editar Categoría">✏️</button>
-            </p>
-          </article>
-        `;
-      }
-
-      render() {
-        const container = document.getElementById('tasksContainer');
-        this.updateStats();
-        this.renderCategoryFilters();
-        this.updateBulkActionUI(); 
-
-        const filteredTasks = this.tasks.filter(task => this.matchesFilter(task));
-        
-        if (filteredTasks.length === 0) {
-          container.innerHTML = `<h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">Tareas</h2>
-            <div class="text-center py-8 text-inksoft dark:text-amber-300">✨ No hay tareas${this.searchTerm ? ' para tu búsqueda' : ''}.</div>`;
-          return;
-        }
-        
-        container.innerHTML = `<h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">Tareas</h2>` + 
-                              filteredTasks.map(t => this.generateTaskHTML(t)).join('');
-
-        setTimeout(() => {
-          container.querySelectorAll('.task-text').forEach(el => {
-            const taskId = el.dataset.id;
-            const btn = document.getElementById(`expand-btn-${taskId}`);
-            if (this.expandedTasks.has(taskId) || el.scrollHeight > el.clientHeight) {
-              btn.classList.remove('hidden');
-            }
-          });
-        }, 50);
-      }
-
-      bindEvents() {
-        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
-        document.getElementById('themeToggleMobile')?.addEventListener('click', () => this.toggleTheme());
-
-        document.getElementById('addTaskBtn').addEventListener('click', () => this.addTask());
-        document.getElementById('newTaskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.addTask(); });
-        document.getElementById('searchInput').addEventListener('input', (e) => { this.searchTerm = e.target.value.toLowerCase(); this.render(); });
-
-        document.getElementById('selectAllBtn').addEventListener('click', () => this.toggleSelectAll());
-        document.getElementById('completeActionBtn').addEventListener('click', () => this.executeCompleteAction());
-        document.getElementById('deleteActionBtn').addEventListener('click', () => this.executeDeleteAction());
-
-        document.addEventListener('click', (e) => {
-          if (e.target.classList.contains('filter-btn')) {
-            this.currentFilter = e.target.dataset.filter;
-            this.selectedTasks.clear();
-            this.renderStatusFilters();
-            this.render();
-          }
-          if (e.target.classList.contains('cat-filter-btn')) {
-            this.currentCategory = e.target.dataset.category;
-            this.selectedTasks.clear();
-            this.render();
-          }
-        });
-
-        // --- EVENTOS DE DRAG & DROP ---
-        const dndContainer = document.getElementById('tasksContainer');
-        dndContainer.addEventListener('dragstart', e => {
-          const item = e.target.closest('.task-item');
-          if (!item) return;
-          this.draggedId = item.dataset.id;
-          setTimeout(() => item.classList.add('opacity-40', 'scale-95'), 0);
-        });
-
-        dndContainer.addEventListener('dragover', e => { e.preventDefault(); });
-
-        dndContainer.addEventListener('drop', e => {
-          e.preventDefault();
-          const item = e.target.closest('.task-item');
-          if (item && this.draggedId && item.dataset.id !== this.draggedId) {
-            this.reorderTasks(this.draggedId, item.dataset.id);
-          }
-        });
-
-        dndContainer.addEventListener('dragend', e => {
-          const item = e.target.closest('.task-item');
-          if (item) item.classList.remove('opacity-40', 'scale-95');
-          this.draggedId = null;
-        });
-      }
-
-      loadTheme() {
-        const isDark = localStorage.getItem('theme') === 'dark';
-        document.documentElement.classList.toggle('dark', isDark);
-        document.documentElement.classList.toggle('light', !isDark);
-        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-        ['sunIcon', 'sunIconMobile'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !isDark));
-        ['moonIcon', 'moonIconMobile'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', isDark));
-      }
-
-      toggleTheme() {
-        const isDark = document.documentElement.classList.contains('dark');
-        localStorage.setItem('theme', isDark ? 'light' : 'dark');
-        this.loadTheme();
-      }
-
-      addTask() {
-        const text = document.getElementById('newTaskInput').value.trim();
-        const priority = document.getElementById('newPriorityInput').value || 'medium';
-        const selectEl = document.getElementById('newCategorySelect');
-        const textEl = document.getElementById('newCategoryText');
-        
-        if (!text) return;
-
-        let category = 'General';
-        if (!textEl.classList.contains('hidden') && textEl.value.trim() !== '') {
-            category = textEl.value.trim();
-        } else if (selectEl && selectEl.value && selectEl.value !== 'nueva') {
-            category = selectEl.value;
-        }
-
-        this.tasks.unshift({ id: Date.now().toString(), text, category, priority, completed: false });
-        this.saveTasks();
-        
-        // Reset interfaz
-        document.getElementById('newTaskInput').value = ''; 
-        document.getElementById('newPriorityInput').value = 'medium';
-        if(textEl) {
-            textEl.value = '';
-            textEl.classList.add('hidden');
-        }
-        const cancelBtn = document.getElementById('cancelNewCatBtn');
-        if(cancelBtn) cancelBtn.classList.add('hidden');
-        if(selectEl) selectEl.classList.remove('hidden');
-        
-        document.getElementById('newTaskInput').focus();
-        this.render();
-      }
-
-      editTask(taskId) {
-        const task = this.tasks.find(t => t.id === taskId);
-        if (task) {
-          const newText = prompt("Edita la tarea:", task.text);
-          if (newText && newText.trim()) { task.text = newText.trim(); this.saveTasks(); this.render(); }
-        }
-      }
-
-      editCategory(taskId) {
-        const task = this.tasks.find(t => t.id === taskId);
-        if (task) {
-          const newCat = prompt("Edita el nombre de la categoría:", task.category);
-          if (newCat && newCat.trim()) { 
-            task.category = newCat.trim(); 
-            this.saveTasks(); 
-            this.render(); 
-          }
-        }
-      }
-
-      toggleExpand(taskId) {
-        this.expandedTasks.has(taskId) ? this.expandedTasks.delete(taskId) : this.expandedTasks.add(taskId);
-        this.render();
-      }
-
-      toggleTask(taskId) {
-        const task = this.tasks.find(t => t.id === taskId);
-        if (task) { task.completed = !task.completed; this.saveTasks(); this.render(); }
-      }
-
-      updatePriority(taskId, priority) {
-        const task = this.tasks.find(t => t.id === taskId);
-        if (task) { task.priority = priority; this.saveTasks(); this.render(); }
-      }
-
-      deleteTask(taskId) {
-        const task = this.tasks.find(t => t.id === taskId);
-        if (!task) return;
-
-        if (confirm(`¿Deseas eliminar la tarea:\n"${task.text}"?`)) {
-          this.tasks = this.tasks.filter(t => t.id !== taskId);
-          this.selectedTasks.delete(taskId);
-          this.expandedTasks.delete(taskId);
-          this.saveTasks(); 
-          this.render();
-        }
-      }
-
-      reorderTasks(draggedId, targetId) {
-        const draggedIndex = this.tasks.findIndex(t => t.id === draggedId);
-        const targetIndex = this.tasks.findIndex(t => t.id === targetId);
-        if (draggedIndex > -1 && targetIndex > -1) {
-          const [draggedTask] = this.tasks.splice(draggedIndex, 1);
-          this.tasks.splice(targetIndex, 0, draggedTask);
-          this.saveTasks();
-          this.render();
-        }
-      }
-
-      toggleSelection(taskId) {
-        this.selectedTasks.has(taskId) ? this.selectedTasks.delete(taskId) : this.selectedTasks.add(taskId);
-        this.updateBulkActionUI();
-        this.render(); 
-      }
-
-      toggleSelectAll() {
-        const fTasks = this.tasks.filter(t => this.matchesFilter(t));
-        const allSelected = fTasks.length > 0 && fTasks.every(t => this.selectedTasks.has(t.id));
-        fTasks.forEach(t => allSelected ? this.selectedTasks.delete(t.id) : this.selectedTasks.add(t.id));
-        this.render();
-      }
-
-      executeCompleteAction() {
-        const fTasks = this.tasks.filter(t => this.matchesFilter(t));
-        const targets = this.selectedTasks.size > 0 ? this.tasks.filter(t => this.selectedTasks.has(t.id)) : fTasks;
-        if (targets.length === 0) return;
-        const allCompleted = targets.every(t => t.completed);
-        targets.forEach(t => t.completed = !allCompleted);
-        this.selectedTasks.clear();
-        this.saveTasks(); 
-        this.render();
-      }
-
-      executeDeleteAction() {
-        if (this.selectedTasks.size > 0) {
-          if (confirm(`¿Borrar ${this.selectedTasks.size} tarea(s) seleccionada(s)?`)) {
-            this.tasks = this.tasks.filter(t => !this.selectedTasks.has(t.id));
-            this.selectedTasks.clear();
-          } else return;
-        } else {
-          const count = this.tasks.filter(t => t.completed).length;
-          if (count === 0) return alert("No hay tareas hechas para borrar.");
-          if (confirm(`¿Borrar las ${count} tareas hechas?`)) this.tasks = this.tasks.filter(t => !t.completed);
-          else return;
-        }
-        this.saveTasks(); this.render();
-      }
-
-      updateBulkActionUI() {
-        const selBtn = document.getElementById('selectAllBtn');
-        const compBtn = document.getElementById('completeActionBtn');
-        const delBtn = document.getElementById('deleteActionBtn');
-        if (!selBtn || !compBtn || !delBtn) return; 
-
-        const fTasks = this.tasks.filter(t => this.matchesFilter(t));
-        const allSelected = fTasks.length > 0 && fTasks.every(t => this.selectedTasks.has(t.id));
-        selBtn.innerHTML = allSelected ? '☐ Desmarcar Todo' : '☑ Seleccionar Todo';
-        
-        const targets = this.selectedTasks.size > 0 ? this.tasks.filter(t => this.selectedTasks.has(t.id)) : fTasks;
-        const allCompleted = targets.length > 0 && targets.every(t => t.completed);
-
-        if (this.selectedTasks.size > 0) {
-          compBtn.innerHTML = allCompleted ? `⟲ Pendientes Sel. (${this.selectedTasks.size})` : `✓ Completar Sel. (${this.selectedTasks.size})`;
-          delBtn.innerHTML = `🗑 Borrar Sel. (${this.selectedTasks.size})`;
-        } else {
-          compBtn.innerHTML = (allCompleted && fTasks.length > 0) ? '⟲ Pendientes Todas' : '✓ Completar Todas';
-          delBtn.innerHTML = '🗑 Borrar Hechas';
-        }
-      }
-
-      matchesFilter(task) {
-        const mSearch = task.text.toLowerCase().includes(this.searchTerm) || task.category.toLowerCase().includes(this.searchTerm);
-        const mPriority = this.currentFilter === 'all' || (this.currentFilter === task.priority) || (this.currentFilter === 'completed' && task.completed) || (this.currentFilter === 'pending' && !task.completed);
-        const mCat = this.currentCategory === 'all' || task.category === this.currentCategory;
-        return mSearch && mPriority && mCat;
-      }
-
-      updateStats() {
-        const total = this.tasks.length;
-        const completed = this.tasks.filter(t => t.completed).length;
-        document.getElementById('statTotal').textContent = total;
-        document.getElementById('statCompleted').textContent = completed;
-        document.getElementById('statPending').textContent = total - completed;
-      }
-
-      saveTasks() { localStorage.setItem('organizator-tasks', JSON.stringify(this.tasks)); }
+  class Organizator {
+    constructor() {
+      this.tasks = JSON.parse(localStorage.getItem('organizator-tasks')) || [];
+      this.currentFilter = 'all';
+      this.currentCategory = 'all';
+      this.searchTerm = '';
+      this.selectedTasks = new Set();
+      this.expandedTasks = new Set();
+      this.openSubtaskPanels = new Set();
+      this.lang = localStorage.getItem('organizator-lang') || 'es';
+      this.statusFilters = [
+        {id:'all',       labelKey:'filterAll',       color:'amber'},
+        {id:'high',      labelKey:'filterHigh',      color:'red'},
+        {id:'medium',    labelKey:'filterMedium',    color:'amber'},
+        {id:'low',       labelKey:'filterLow',       color:'emerald'},
+        {id:'completed', labelKey:'filterCompleted', color:'zinc'},
+        {id:'pending',   labelKey:'filterPending',   color:'blue'}
+      ];
+      this.init();
     }
 
-    const organizator = new Organizator();
+    t(key) { return (I18N[this.lang]||I18N.es)[key]||key; }
+
+    setLanguage(lang) {
+      this.lang = lang;
+      localStorage.setItem('organizator-lang', lang);
+      this.applyTranslations();
+      this.renderStatusFilters();
+      this.render();
+    }
+
+    applyTranslations() {
+      const l = this.lang;
+      document.documentElement.lang = l;
+      document.getElementById('appTitle').textContent = this.t('appTitle');
+      document.getElementById('appSubtitle').textContent = this.t('appSubtitle');
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const v = I18N[l][el.dataset.i18n];
+        if (v !== undefined) el.textContent = v;
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const v = I18N[l][el.dataset.i18nPlaceholder];
+        if (v) el.placeholder = v;
+      });
+      const prio = document.getElementById('newPriorityInput');
+      if (prio) { prio.options[0].text=this.t('priorityHigh'); prio.options[1].text=this.t('priorityMedium'); prio.options[2].text=this.t('priorityLow'); }
+      // Lang dropdown UI
+      const m = LANG_META[l];
+      document.getElementById('langCurrentFlag').textContent = m.flag;
+      document.getElementById('langCurrentCode').textContent = m.code;
+      document.querySelectorAll('.lang-option').forEach(btn => btn.classList.toggle('active-lang', btn.dataset.lang===l));
+      // Theme icons
+      ['sunIcon','sunIconMobile'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=`☀️ ${this.t('lightMode')}`; });
+      ['moonIcon','moonIconMobile'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=`🌙 ${this.t('darkMode')}`; });
+    }
+
+    init() {
+      this.loadTheme();
+      this.applyTranslations();
+      this.renderStatusFilters();
+      this.bindEvents();
+      this.render();
+    }
+
+    escapeHTML(str) {
+      return String(str).replace(/[&<>'"]/g, t=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t]));
+    }
+
+    getPriorityConfig(p) {
+      return ({high:{textKey:'prioHigh',color:'bg-red-500/90'},medium:{textKey:'prioMedium',color:'bg-amber-500/90'},low:{textKey:'prioLow',color:'bg-emerald-500/90'}})[p]||{textKey:'prioMedium',color:'bg-amber-500/90'};
+    }
+
+    getSubtaskProgress(task) {
+      if (!task.subtasks||!task.subtasks.length) return null;
+      const done = task.subtasks.filter(s=>s.completed).length;
+      return {done, total:task.subtasks.length, pct:Math.round(done/task.subtasks.length*100)};
+    }
+
+    addSubtask(taskId) {
+      const input = document.getElementById(`subtask-input-${taskId}`);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      const task = this.tasks.find(t=>t.id===taskId);
+      if (!task) return;
+      if (!task.subtasks) task.subtasks=[];
+      task.subtasks.push({id:Date.now().toString(), text, completed:false});
+      this.saveTasks();
+      input.value='';
+      this.openSubtaskPanels.add(taskId);
+      this.render();
+    }
+
+    // Toggle subtask → sync parent task
+    toggleSubtask(taskId, subtaskId) {
+      const task = this.tasks.find(t=>t.id===taskId);
+      if (!task||!task.subtasks) return;
+      const sub = task.subtasks.find(s=>s.id===subtaskId);
+      if (!sub) return;
+      sub.completed = !sub.completed;
+      // If all subtasks done → mark parent done. If any undone → mark parent pending.
+      task.completed = task.subtasks.length>0 && task.subtasks.every(s=>s.completed);
+      this.saveTasks();
+      this.openSubtaskPanels.add(taskId);
+      this.render();
+    }
+
+    deleteSubtask(taskId, subtaskId) {
+      const task = this.tasks.find(t=>t.id===taskId);
+      if (!task||!task.subtasks) return;
+      if (!confirm(this.t('confirmDeleteSubtask'))) return;
+      task.subtasks = task.subtasks.filter(s=>s.id!==subtaskId);
+      this.saveTasks();
+      this.openSubtaskPanels.add(taskId);
+      this.render();
+    }
+
+    toggleSubtaskPanel(taskId) {
+      this.openSubtaskPanels.has(taskId) ? this.openSubtaskPanels.delete(taskId) : this.openSubtaskPanels.add(taskId);
+      document.getElementById(`subtasks-panel-${taskId}`)?.classList.toggle('open', this.openSubtaskPanels.has(taskId));
+      const arrow = document.getElementById(`subtask-arrow-${taskId}`);
+      if (arrow) arrow.textContent = this.openSubtaskPanels.has(taskId)?'▲':'▼';
+    }
+
+    buildProgressHTML(prog) {
+      const c = prog.pct===100?'bg-emerald-500':prog.pct>=50?'bg-amber-500':'bg-red-400';
+      return `<div class="flex items-center gap-2">
+        <span class="text-[10px] uppercase tracking-wider text-amber-700/70 dark:text-amber-400/70 shrink-0 hidden sm:inline">${this.t('progressLabel')}</span>
+        <div class="flex-1 h-2 rounded-full bg-amber-200/60 dark:bg-zinc-700/60 overflow-hidden min-w-[50px]">
+          <div class="progress-fill h-full rounded-full ${c}" style="width:${prog.pct}%"></div>
+        </div>
+        <span class="text-[10px] font-bold text-amber-800 dark:text-amber-300 shrink-0">${prog.done}/${prog.total}</span>
+      </div>`;
+    }
+
+    buildSubtaskListHTML(task) {
+      if (!task.subtasks||!task.subtasks.length) return '';
+      return task.subtasks.map(sub=>`
+        <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-amber-100/50 dark:hover:bg-zinc-700/40 group transition">
+          <input type="checkbox" id="sub-${sub.id}" class="h-4 w-4 rounded accent-emerald-600 cursor-pointer shrink-0"
+            ${sub.completed?'checked':''} onchange="organizator.toggleSubtask('${task.id}','${sub.id}')">
+          <label for="sub-${sub.id}" class="flex-1 text-sm text-amber-900/90 dark:text-amber-100/80 cursor-pointer ${sub.completed?'line-through opacity-55':''}">
+            ${this.escapeHTML(sub.text)}</label>
+          <button class="opacity-0 group-hover:opacity-100 focus:opacity-100 text-red-400 hover:text-red-600 transition text-xs shrink-0"
+            onclick="organizator.deleteSubtask('${task.id}','${sub.id}')">✕</button>
+        </div>`).join('');
+    }
+
+    generateTaskHTML(task) {
+      const isSel  = this.selectedTasks.has(task.id);
+      const isExp  = this.expandedTasks.has(task.id);
+      const isOpen = this.openSubtaskPanels.has(task.id);
+      const strike = task.completed ? 'line-through opacity-60' : '';
+      const pc     = this.getPriorityConfig(task.priority);
+      const prog   = this.getSubtaskProgress(task);
+      const sCount = (task.subtasks || []).length;
+
+      return `
+        <article data-id="${task.id}" draggable="true"
+          class="task-item cursor-move relative bg-gradient-to-br from-amber-50/80 via-amber-100/60 to-amber-50/70 dark:from-zinc-800/70 dark:via-zinc-700/60 dark:to-zinc-800/50 border border-amber-800/30 dark:border-amber-400/40 border-l-8 border-amber-900/60 dark:border-amber-300/50 shadow-[8px_8px_16px_rgba(0,0,0,0.3)] rounded-2xl p-5 pt-8 pb-4 transition-all duration-200 ${isSel ? 'ring-2 ring-blue-500/60 scale-[1.01]' : ''}">
+
+          <!-- Checkbox selecionar top-left -->
+          <div class="absolute -top-3 -left-4 z-10">
+            <input type="checkbox" id="sel-${task.id}" class="peer sr-only" ${isSel ? 'checked' : ''} onchange="organizator.toggleSelection('${task.id}')">
+            <label for="sel-${task.id}" class="flex items-center justify-center w-6 h-6 rounded-full border-2 border-amber-900/40 dark:border-amber-400/40 bg-amber-50/90 dark:bg-zinc-800/90 shadow-md cursor-pointer hover:scale-110 transition-all peer-checked:border-blue-500 peer-checked:shadow-blue-500/20">
+              <span class="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 scale-0 peer-checked:scale-100 transition-transform duration-200"></span>
+            </label>
+          </div>
+
+          <!-- Botão fechar top-right -->
+          <button class="absolute -top-3 -right-4 w-7 h-7 rounded-full bg-red-700 text-amber-50 text-sm font-bold shadow-md hover:bg-red-800 transition"
+            onclick="organizator.deleteTask('${task.id}')">✕</button>
+
+          <!-- Cabeçalho: texto + badge prioridade -->
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-3 border-b border-amber-900/20 dark:border-amber-400/30 mb-3">
+            <div class="flex-1 flex items-start min-w-0 pr-2">
+              <div class="flex-1 min-w-0">
+                <p id="text-${task.id}" data-id="${task.id}"
+                  class="task-text text-base sm:text-lg font-serif italic text-amber-900/95 dark:text-amber-100/90 break-words whitespace-pre-wrap ${isExp ? '' : 'line-clamp-4 md:line-clamp-5'} ${strike}">
+                  ${this.escapeHTML(task.text)}</p>
+                <button id="expand-btn-${task.id}" class="text-xs font-sans font-bold text-blue-700 dark:text-blue-400 hover:underline mt-1 hidden"
+                  onclick="organizator.toggleExpand('${task.id}')">
+                  ${isExp ? this.t('expandLess') : this.t('expandMore')}</button>
+              </div>
+              <button class="ml-2 mt-1 text-sm text-[#6b7280] hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition shrink-0"
+                onclick="organizator.editTask('${task.id}')">✏️</button>
+            </div>
+            
+            <!-- Selector de Prioridad oculto pero nativo -->
+            <label class="self-start w-fit relative shrink-0 inline-flex items-center gap-2 text-xs sm:text-sm rounded-full border border-amber-900/50 dark:border-amber-400/60 bg-amber-50/80 dark:bg-zinc-900/80 px-4 py-2 cursor-pointer group hover:bg-amber-100/50">
+              ${this.t('priorityLabel')}: 
+              <span class="text-xs font-semibold px-2 py-1 rounded-full ml-1 text-white ${pc.color}">${this.t(pc.textKey)}</span>
+              <select aria-label="Cambiar prioridad" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" onchange="organizator.updatePriority('${task.id}', this.value)">
+                <option value="high" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'high' ? 'selected' : ''}>${this.t('prioHigh')}</option>
+                <option value="medium" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'medium' ? 'selected' : ''}>${this.t('prioMedium')}</option>
+                <option value="low" class="bg-white dark:bg-zinc-800 text-ink dark:text-zinc-100" ${task.priority === 'low' ? 'selected' : ''}>${this.t('prioLow')}</option>
+              </select>
+            </label>
+
+          </div>
+
+          <!-- Fila: categoria + toggle subtarefas -->
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <p class="text-xs sm:text-sm text-amber-700/80 dark:text-amber-300/70 font-serif italic flex items-center gap-1.5">
+              📓 <span>${this.escapeHTML(task.category)}</span>
+              <button class="text-[11px] text-[#6b7280] hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-300 transition"
+                onclick="organizator.editCategory('${task.id}')">✏️</button>
+            </p>
+            <button onclick="organizator.toggleSubtaskPanel('${task.id}')"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition
+                ${isOpen ? 'bg-amber-200/80 dark:bg-amber-700/70 border-amber-700/50 text-amber-900 dark:text-amber-50' : 'bg-amber-50/60 dark:bg-zinc-800/60 border-amber-700/30 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 hover:bg-amber-100/70 dark:hover:bg-zinc-700/50'}"
+              aria-expanded="${isOpen}">
+              ☰ ${this.t('subtasksToggle')}
+              ${sCount > 0 ? `<span class="bg-amber-600/80 text-white rounded-full px-1.5 py-0.5 text-[10px] leading-none">${sCount}</span>` : ''}
+              <span id="subtask-arrow-${task.id}" class="text-[10px]">${isOpen ? '▲' : '▼'}</span>
+            </button>
+          </div>
+
+          <!-- Panel subtarefas expandível -->
+          <div id="subtasks-panel-${task.id}" class="subtasks-panel ${isOpen ? 'open' : ''}">
+            <div class="subtasks-inner">
+              <div class="mt-2 pt-3 border-t border-amber-900/15 dark:border-amber-400/20 mb-3">
+                <p class="text-xs uppercase tracking-wider text-amber-700/60 dark:text-amber-400/60 mb-2 px-1">${this.t('subtasksTitle')}</p>
+                <div id="subtask-list-${task.id}" class="space-y-0.5 mb-3">${this.buildSubtaskListHTML(task)}</div>
+                <div class="flex gap-2 items-center">
+                  <input type="text" id="subtask-input-${task.id}" placeholder="${this.t('addSubtaskPlaceholder')}"
+                    class="flex-1 rounded-md border border-amber-900/30 dark:border-amber-600/40 bg-amber-50/50 dark:bg-zinc-900/70 px-3 py-2 text-xs text-[#6b7280] dark:text-amber-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 transition"
+                    onkeypress="if(event.key==='Enter') organizator.addSubtask('${task.id}')">
+                  <button onclick="organizator.addSubtask('${task.id}')"
+                    class="shrink-0 px-3 py-2 rounded-md bg-amber-500/80 hover:bg-amber-600/90 text-amber-950 text-xs font-bold shadow transition active:scale-95">
+                    ${this.t('addSubtaskBtn')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fila inferior: barra de progresso (esquerda) + checkbox Hecha (direita) movida para o final -->
+          <div class="flex items-center gap-3 pt-3 mt-1 border-t border-amber-900/10 dark:border-amber-400/15">
+            <div id="progress-wrap-${task.id}" class="min-w-0 max-w-[52%] flex-1">
+              ${prog ? this.buildProgressHTML(prog) : ''}
+            </div>
+            <div class="flex-1"></div>
+            <label class="flex items-center gap-2 cursor-pointer bg-amber-100/80 dark:bg-amber-700/70 px-3 py-1.5 rounded-md border-2 border-emerald-600/40 dark:border-emerald-400/40 shadow hover:bg-amber-200/90 dark:hover:bg-amber-600/80 transition shrink-0 select-none">
+              <input type="checkbox" id="task-chk-${task.id}" class="h-4 w-4 cursor-pointer accent-emerald-600"
+                ${task.completed ? 'checked' : ''} onchange="organizator.toggleTask('${task.id}')">
+              <span class="text-xs font-semibold text-emerald-800 dark:text-emerald-200">${this.t('markDone')}</span>
+            </label>
+          </div>
+
+        </article>`;
+    }
+
+
+    renderStatusFilters() {
+      document.getElementById('statusFiltersContainer').innerHTML = this.statusFilters.map(f=>{
+        const on = this.currentFilter===f.id;
+        return `<button class="filter-btn text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border transition
+          ${on?`border-${f.color}-900/40 bg-${f.color}-100/80 dark:bg-${f.color}-700/70 text-ink dark:text-${f.color}-50 shadow-sm`
+              :`border-${f.color}-700/60 bg-transparent text-${f.color}-800 dark:text-${f.color}-200 hover:bg-${f.color}-100/30`}"
+          data-filter="${f.id}">${this.t(f.labelKey)}</button>`;
+      }).join('');
+    }
+
+    renderCategoryFilters() {
+      const container = document.getElementById('categoryFilterContainer');
+      const catSelect = document.getElementById('newCategorySelect');
+      const cats = ['all'];
+      this.tasks.forEach(t=>{ if(!cats.includes(t.category)) cats.push(t.category); });
+      let btnsHTML='', selHTML='';
+      cats.forEach(cat=>{
+        const on=this.currentCategory===cat, label=cat==='all'?this.t('filterAll'):cat;
+        const cls = cat==='all'
+          ?(on?'bg-amber-200/90 dark:bg-amber-700/80 border-amber-900/60 text-amber-900 dark:text-amber-50':'bg-amber-100/60 dark:bg-amber-800/40 border-amber-900/30 text-amber-800 dark:text-amber-200 hover:bg-amber-200/60')
+          :(on?'bg-blue-200/90 dark:bg-blue-800/80 border-blue-600/60 text-blue-900 dark:text-blue-50':'bg-blue-50/70 dark:bg-blue-900/40 border-blue-400/50 text-blue-800 dark:text-blue-200 hover:bg-blue-100');
+        btnsHTML+=`<button class="cat-filter-btn ${cls} text-xs font-semibold px-3 py-1.5 rounded-full border shadow-sm transition min-w-[55px]" data-category="${cat}">${label}</button>`;
+        if(cat!=='all') selHTML+=`<option value="${cat}">${cat}</option>`;
+      });
+      selHTML+=`<option value="nueva">${this.t('writeNew')}</option>`;
+      container.innerHTML=btnsHTML;
+      if(catSelect){
+        const cur=catSelect.value;
+        catSelect.innerHTML=selHTML;
+        if(cats.includes(cur)&&cur!=='nueva') catSelect.value=cur;
+        else catSelect.value=cats.length>1?cats[1]:'General';
+      }
+      const ti=document.getElementById('newCategoryText'), cb=document.getElementById('cancelNewCatBtn');
+      if(ti&&cb&&catSelect){
+        ti.addEventListener('input',()=>cb.classList.toggle('hidden',ti.classList.contains('hidden')));
+        catSelect.addEventListener('change',()=>cb.classList.toggle('hidden',ti.classList.contains('hidden')));
+      }
+    }
+
+    render() {
+      const container=document.getElementById('tasksContainer');
+      this.updateStats(); this.renderCategoryFilters(); this.updateBulkActionUI();
+      const filtered=this.tasks.filter(t=>this.matchesFilter(t));
+      if(!filtered.length){
+        container.innerHTML=`<h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">${this.t('taskListTitle')}</h2>
+          <div class="text-center py-8 text-[#6b7280] dark:text-amber-300">${this.searchTerm?this.t('noTasksSearch'):this.t('noTasks')}</div>`;
+        return;
+      }
+      container.innerHTML=`<h2 class="text-xl font-semibold tracking-wide text-amber-900 dark:text-amber-100 mb-2">${this.t('taskListTitle')}</h2>`
+        +filtered.map(t=>this.generateTaskHTML(t)).join('');
+      setTimeout(()=>{
+        container.querySelectorAll('.task-text').forEach(el=>{
+          const btn=document.getElementById(`expand-btn-${el.dataset.id}`);
+          if(btn&&(this.expandedTasks.has(el.dataset.id)||el.scrollHeight>el.clientHeight)) btn.classList.remove('hidden');
+        });
+      },50);
+    }
+
+    bindEvents() {
+      document.getElementById('themeToggle').addEventListener('click',()=>this.toggleTheme());
+      document.getElementById('themeToggleMobile')?.addEventListener('click',()=>this.toggleTheme());
+      document.getElementById('addTaskBtn').addEventListener('click',()=>this.addTask());
+      document.getElementById('newTaskInput').addEventListener('keypress',e=>{ if(e.key==='Enter') this.addTask(); });
+      document.getElementById('searchInput').addEventListener('input',e=>{ this.searchTerm=e.target.value.toLowerCase(); this.render(); });
+      document.getElementById('selectAllBtn').addEventListener('click',()=>this.toggleSelectAll());
+      document.getElementById('completeActionBtn').addEventListener('click',()=>this.executeCompleteAction());
+      document.getElementById('deleteActionBtn').addEventListener('click',()=>this.executeDeleteAction());
+      document.addEventListener('click',e=>{
+        if(e.target.classList.contains('filter-btn')){ this.currentFilter=e.target.dataset.filter; this.selectedTasks.clear(); this.renderStatusFilters(); this.render(); }
+        if(e.target.classList.contains('cat-filter-btn')){ this.currentCategory=e.target.dataset.category; this.selectedTasks.clear(); this.render(); }
+      });
+      const dnd=document.getElementById('tasksContainer');
+      dnd.addEventListener('dragstart',e=>{ const it=e.target.closest('.task-item'); if(!it)return; this.draggedId=it.dataset.id; setTimeout(()=>it.classList.add('opacity-40','scale-95'),0); });
+      dnd.addEventListener('dragover',e=>e.preventDefault());
+      dnd.addEventListener('drop',e=>{ e.preventDefault(); const it=e.target.closest('.task-item'); if(it&&this.draggedId&&it.dataset.id!==this.draggedId) this.reorderTasks(this.draggedId,it.dataset.id); });
+      dnd.addEventListener('dragend',e=>{ e.target.closest('.task-item')?.classList.remove('opacity-40','scale-95'); this.draggedId=null; });
+    }
+
+    loadTheme() {
+      const d=localStorage.getItem('theme')==='dark';
+      document.documentElement.classList.toggle('dark',d);
+      document.documentElement.classList.toggle('light',!d);
+      document.documentElement.style.colorScheme=d?'dark':'light';
+    }
+    toggleTheme() { const d=document.documentElement.classList.contains('dark'); localStorage.setItem('theme',d?'light':'dark'); this.loadTheme(); }
+
+    addTask() {
+      const text=document.getElementById('newTaskInput').value.trim();
+      if(!text) return;
+      const priority=document.getElementById('newPriorityInput').value||'medium';
+      const sel=document.getElementById('newCategorySelect'), ti=document.getElementById('newCategoryText');
+      const subInput=document.getElementById('newSubtaskInput');
+      let category='General';
+      if(!ti.classList.contains('hidden')&&ti.value.trim()) category=ti.value.trim();
+      else if(sel?.value&&sel.value!=='nueva') category=sel.value;
+      const subtasks=[];
+      if(subInput?.value.trim()) subtasks.push({id:Date.now().toString(),text:subInput.value.trim(),completed:false});
+      this.tasks.unshift({id:Date.now().toString(),text,category,priority,completed:false,subtasks});
+      this.saveTasks();
+      document.getElementById('newTaskInput').value='';
+      document.getElementById('newPriorityInput').value='medium';
+      if(subInput) subInput.value='';
+      if(ti){ti.value='';ti.classList.add('hidden');}
+      document.getElementById('cancelNewCatBtn')?.classList.add('hidden');
+      sel?.classList.remove('hidden');
+      document.getElementById('newTaskInput').focus();
+      this.render();
+    }
+
+    editTask(id) { const t=this.tasks.find(t=>t.id===id); if(!t)return; const v=prompt(this.t('editTaskPrompt'),t.text); if(v?.trim()){t.text=v.trim();this.saveTasks();this.render();} }
+    editCategory(id) { const t=this.tasks.find(t=>t.id===id); if(!t)return; const v=prompt(this.t('editCategoryPrompt'),t.category); if(v?.trim()){t.category=v.trim();this.saveTasks();this.render();} }
+    toggleExpand(id) { this.expandedTasks.has(id)?this.expandedTasks.delete(id):this.expandedTasks.add(id); this.render(); }
+
+    // Toggle tarefa principal → sync subtarefas
+    toggleTask(taskId) {
+      const task=this.tasks.find(t=>t.id===taskId);
+      if(!task) return;
+      task.completed=!task.completed;
+      if(task.subtasks?.length) task.subtasks.forEach(s=>s.completed=task.completed);
+      this.saveTasks(); this.render();
+    }
+
+    updatePriority(id,p) { const t=this.tasks.find(t=>t.id===id); if(t){t.priority=p;this.saveTasks();this.render();} }
+
+    deleteTask(id) {
+      const t=this.tasks.find(t=>t.id===id); if(!t) return;
+      if(confirm(`${this.t('confirmDelete')}${t.text}${this.t('confirmDeleteSuffix')}`)){
+        this.tasks=this.tasks.filter(t=>t.id!==id);
+        this.selectedTasks.delete(id); this.expandedTasks.delete(id); this.openSubtaskPanels.delete(id);
+        this.saveTasks(); this.render();
+      }
+    }
+
+    reorderTasks(dId,tId) {
+      const di=this.tasks.findIndex(t=>t.id===dId), ti=this.tasks.findIndex(t=>t.id===tId);
+      if(di>-1&&ti>-1){const[dt]=this.tasks.splice(di,1);this.tasks.splice(ti,0,dt);this.saveTasks();this.render();}
+    }
+
+    toggleSelection(id) { this.selectedTasks.has(id)?this.selectedTasks.delete(id):this.selectedTasks.add(id); this.updateBulkActionUI(); this.render(); }
+
+    toggleSelectAll() {
+      const f=this.tasks.filter(t=>this.matchesFilter(t));
+      const all=f.length>0&&f.every(t=>this.selectedTasks.has(t.id));
+      f.forEach(t=>all?this.selectedTasks.delete(t.id):this.selectedTasks.add(t.id));
+      this.render();
+    }
+
+    // Completar em massa → também sincroniza subtarefas
+    executeCompleteAction() {
+      const f=this.tasks.filter(t=>this.matchesFilter(t));
+      const targets=this.selectedTasks.size>0?this.tasks.filter(t=>this.selectedTasks.has(t.id)):f;
+      if(!targets.length) return;
+      const newState=!targets.every(t=>t.completed);
+      targets.forEach(t=>{ t.completed=newState; if(t.subtasks?.length) t.subtasks.forEach(s=>s.completed=newState); });
+      this.selectedTasks.clear(); this.saveTasks(); this.render();
+    }
+
+    executeDeleteAction() {
+      if(this.selectedTasks.size>0){
+        if(confirm(`${this.t('confirmDeleteMultiple')}${this.selectedTasks.size}${this.t('confirmDeleteMultipleSuffix')}`)){
+          this.tasks=this.tasks.filter(t=>!this.selectedTasks.has(t.id)); this.selectedTasks.clear();
+        } else return;
+      } else {
+        const count=this.tasks.filter(t=>t.completed).length;
+        if(!count) return alert(this.t('noTasksDone'));
+        if(confirm(`${this.t('confirmDeleteDone')}${count}${this.t('confirmDeleteDoneSuffix')}`))
+          this.tasks=this.tasks.filter(t=>!t.completed);
+        else return;
+      }
+      this.saveTasks(); this.render();
+    }
+
+    updateBulkActionUI() {
+      const sb=document.getElementById('selectAllBtn'), cb=document.getElementById('completeActionBtn'), db=document.getElementById('deleteActionBtn');
+      if(!sb||!cb||!db) return;
+      const f=this.tasks.filter(t=>this.matchesFilter(t));
+      sb.innerHTML=f.length>0&&f.every(t=>this.selectedTasks.has(t.id))?this.t('deselectAll'):this.t('selectAll');
+      const targets=this.selectedTasks.size>0?this.tasks.filter(t=>this.selectedTasks.has(t.id)):f;
+      const allDone=targets.length>0&&targets.every(t=>t.completed);
+      if(this.selectedTasks.size>0){
+        cb.innerHTML=allDone?`${this.t('pendingSelected')} (${this.selectedTasks.size})`:`${this.t('completeSelected')} (${this.selectedTasks.size})`;
+        db.innerHTML=`${this.t('deleteSel')} (${this.selectedTasks.size})`;
+      } else {
+        cb.innerHTML=(allDone&&f.length>0)?this.t('pendingAll'):this.t('completeAll');
+        db.innerHTML=this.t('deleteDone');
+      }
+    }
+
+    matchesFilter(t) {
+      const ms=t.text.toLowerCase().includes(this.searchTerm)||t.category.toLowerCase().includes(this.searchTerm);
+      const mp=this.currentFilter==='all'||this.currentFilter===t.priority||(this.currentFilter==='completed'&&t.completed)||(this.currentFilter==='pending'&&!t.completed);
+      return ms&&mp&&(this.currentCategory==='all'||t.category===this.currentCategory);
+    }
+
+    updateStats() {
+      const total=this.tasks.length, done=this.tasks.filter(t=>t.completed).length;
+      document.getElementById('statTotal').textContent=total;
+      document.getElementById('statCompleted').textContent=done;
+      document.getElementById('statPending').textContent=total-done;
+    }
+
+    saveTasks() { localStorage.setItem('organizator-tasks',JSON.stringify(this.tasks)); }
+  }
+
+  const organizator = new Organizator();
   </script>
 </body>
 </html>
