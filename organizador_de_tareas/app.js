@@ -228,23 +228,31 @@ class OrganizadorDeTareas {
     }else{badge.classList.add('hidden');}
   }
 
-  // ── Mobile drawer ─────────────────────────────────────────────────────────
-  toggleMobileDrawer(){
-    this.mobileDrawerOpen=!this.mobileDrawerOpen;
-    const drawer=document.getElementById('mobileDrawer');
-    const backdrop=document.getElementById('mobileDrawerBackdrop');
-    if(drawer){drawer.classList.toggle('-translate-x-full',!this.mobileDrawerOpen);}
-    if(backdrop){backdrop.classList.toggle('hidden',!this.mobileDrawerOpen);}
-    document.body.style.overflow=this.mobileDrawerOpen?'hidden':'';
-  }
-  closeMobileDrawer(){
-    this.mobileDrawerOpen=false;
-    const drawer=document.getElementById('mobileDrawer');
-    const backdrop=document.getElementById('mobileDrawerBackdrop');
-    if(drawer)drawer.classList.add('-translate-x-full');
-    if(backdrop)backdrop.classList.add('hidden');
-    document.body.style.overflow='';
-  }
+// ── Mobile drawer ─────────────────────────────────────────────────────────
+toggleMobileDrawer() {
+  this.mobileDrawerOpen = !this.mobileDrawerOpen;
+  const drawer   = document.getElementById('mobileDrawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
+  const btn      = document.getElementById('mobileMenuBtn');
+
+  if (drawer)   drawer.classList.toggle('-translate-x-full', !this.mobileDrawerOpen);
+  if (backdrop) backdrop.classList.toggle('hidden', !this.mobileDrawerOpen);
+  if (btn)      btn.classList.toggle('hidden', this.mobileDrawerOpen);
+
+  document.body.style.overflow = this.mobileDrawerOpen ? 'hidden' : '';
+}
+closeMobileDrawer() {
+  this.mobileDrawerOpen = false;
+  const drawer   = document.getElementById('mobileDrawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
+  const btn      = document.getElementById('mobileMenuBtn');
+
+  if (drawer)   drawer.classList.add('-translate-x-full');
+  if (backdrop) backdrop.classList.add('hidden');
+  if (btn)      btn.classList.remove('hidden');
+
+  document.body.style.overflow = '';
+}
 
   // ── Mobile inline calendar toggle ─────────────────────────────────────────
   toggleMobileCalendar(){
@@ -610,12 +618,28 @@ class OrganizadorDeTareas {
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────
-  loadTheme(){
-    const isDark=storageManager.loadTheme('light')==='dark';
-    document.documentElement.classList.toggle('dark',isDark);document.documentElement.classList.toggle('light',!isDark);document.documentElement.style.colorScheme=isDark?'dark':'light';
-    const ti=document.getElementById('themeIconFixed');if(ti)ti.textContent=isDark?'☀️':'🌙';
-  }
-  toggleTheme(){const isDark=document.documentElement.classList.contains('dark');storageManager.saveTheme(isDark?'light':'dark');this.loadTheme();}
+loadTheme() {
+  const isDark = storageManager.loadTheme('light') === 'dark';
+  document.documentElement.classList.toggle('dark', isDark);
+  document.documentElement.classList.toggle('light', !isDark);
+  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+
+  // Ícone do botão fixo (desktop)
+  const ti = document.getElementById('themeIconFixed');
+  if (ti) ti.textContent = isDark ? '☀️' : '🌙';
+
+  // Ícone e label do botão no drawer mobile
+  const icon = document.getElementById('drawerThemeIcon');
+  const label = document.getElementById('drawerThemeLabel');
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+  if (label) label.textContent = isDark ? this.t('lightMode') : this.t('darkMode');
+}
+
+toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  storageManager.saveTheme(isDark ? 'light' : 'dark');
+  this.loadTheme();
+}
 
   // ── Task CRUD ─────────────────────────────────────────────────────────────
   addTask(){
