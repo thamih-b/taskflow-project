@@ -58,10 +58,15 @@ app.get('*path', (req, res) => {
   res.sendFile(path.join(PASTA_FRONTEND, 'index.html'));
 });
 
-// ─── ARRANQUE ─────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`   Frontend  → http://localhost:${PORT}`);
-  console.log(`   API       → http://localhost:${PORT}/api/v1/tareas`);
-  console.log(`   API Docs  → http://localhost:${PORT}/api/docs`);
-});
+// Arranque local (ignorado no Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`   Frontend  → http://localhost:${PORT}`);
+    console.log(`   API       → http://localhost:${PORT}/api/v1/tareas`);
+    console.log(`   API Docs  → http://localhost:${PORT}/api/docs`);
+  });
+}
+
+// Exportação para Vercel (serverless)
+module.exports = app;

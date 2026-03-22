@@ -5,7 +5,10 @@
 // independente de como o frontend é aberto (Live Server, file://, etc.)
 // BUG CORRIGIDO: URL relativa '/api/v1' resolvia para a porta errada
 const clienteApi = {
-  BASE_URL: 'http://localhost:3000/api/v1',
+// ✅ usa window.location para detectar o ambiente
+BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api/v1'    // desenvolvimento local
+  : '/api/v1',                         // produção (URL relativa ao Vercel)
 
   // Converte prioridade do servidor ('media','alta','baja') para o frontend ('medium','high','low')
   _normalizarPrioridad(p) {

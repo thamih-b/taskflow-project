@@ -3,17 +3,13 @@
 
 require('dotenv').config();
 
-const VARIABLES_REQUERIDAS = ['PORT'];
+const VARIABLES_REQUERIDAS = ['NODE_ENV'];
 
-VARIABLES_REQUERIDAS.forEach((nombreVariable) => {
-  if (!process.env[nombreVariable]) {
-    throw new Error(
-      `❌ Variable de entorno obligatoria no definida: ${nombreVariable}`
-    );
-  }
+VARIABLES_REQUERIDAS.forEach(key => {
+  if (!process.env[key]) throw new Error(`❌ Variable de entorno obligatoria no definida: ${key}`);
 });
 
 module.exports = {
-  PORT: process.env.PORT,
-  ENTORNO: process.env.NODE_ENV || 'development',
+  PORT: process.env.PORT || 3000,
+  ENTORNO: process.env.NODE_ENV || 'production',
 };
