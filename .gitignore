@@ -8,6 +8,7 @@
 **/node_modules/
 **/node_modules/*
 node_modules/
+server/node_modules/
 
 # ================================
 # 🏗 BUILDS Y OUTPUT
@@ -74,6 +75,7 @@ yarn-error.log*
 .env.local
 .env.*.local
 *.key
+server/.env
 
 # ================================
 # 📱 PWA / SERVICE WORKERS
@@ -86,3 +88,10 @@ manifest.json
 # ================================
 coverage/
 .nyc_output/
+
+# ================================
+# OTHERS
+# ================================
+repomix-output.txt
+repomix-output.xml
+repomix.config.json

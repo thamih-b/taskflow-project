@@ -1,37 +1,67 @@
-// Este ficheiro é o "porteiro" da clínica: configura tudo antes de abrir as portas (segurança, recepção, sinalizações, etc).
+// Este ficheiro é o "porteiro" da aplicação: configura tudo antes de abrir as portas.
 
 const { PORT } = require('./config/env'); // 1. Valida variáveis PRIMEIRO
-const express = require('express');
-const cors = require('cors');
+const express    = require('express');
+const cors       = require('cors');
+const path       = require('path');
 const taskRoutes = require('./routes/task.routes');
+const { swaggerUi, especificacion, opcionesUI } = require('./config/swagger');
 
-const app = express(); // cia a instância da app Express. É o objeto centra, tudo se registra nele.
+const app = express();
 
-// ─── MIDDLEWARES GLOBAIS ────────────────────────────────────────────────────
-// Middleware: função que intercepta TODAS as requisições antes de chegar às rotas (app.use() registra um midleware global)
-app.use(cors()); // Permite pedidos do frontend (porta 5500) para o servidor (porta 3000); Sem isto, o browser bloqueia pedidos por razões de segurança. O cors diz "aceito peddos desta origem"
-app.use(express.json()); // Interpreta o body das requisições como JSON; Sem isto, req.body sera undefined. Este middleware lêo corpo do pedido e converte o JSON em objeto JavaScript.
+// ─── MIDDLEWARES GLOBAIS ──────────────────────────────────────────────────────
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ─── ROTAS ──────────────────────────────────────────────────────────────────
-// Monta o roteador de tarefas sob o prefixo /api/v1/tasks
-app.use('/api/v1/tareas', taskRoutes);
+// ─── ARQUIVOS ESTÁTICOS DO FRONTEND ──────────────────────────────────────────
+// Estrutura do projeto:
+//   taskflow-project/          ← PASTA_FRONTEND (2 níveis acima de server/src)
+//   ├── index.html
+//   ├── app.js
+//   ├── i18n.js
+//   ├── storage.js
+//   └── server/
+//       └── src/
+//           └── index.js       ← __dirname aponta aqui
+const PASTA_FRONTEND = path.join(__dirname, '..', '..');
+app.use(express.static(PASTA_FRONTEND));
 
-// ─── MIDDLEWARE DE ERRO GLOBAL (4 parâmetros = Express identifica como handler de erro)
-// DEVE ser o ÚLTIMO middleware registrado
-app.use((err, req, res, next) => {
-  // Mapeia erros semânticos do serviço para códigos HTTP
-  if (err.message === 'NO_ENCONTRADO') {
-    return res.status(404).json({ erro: 'Tarea no encontrada.' });
-  }
-
-  // Para qualquer outro erro desconhecido:
-  // 1. Regista o erro completo no servidor (para debugging)
-  console.error(err);
-  // 2. Devolve mensagem genérica ao cliente (não expõe detalhes técnicos)
-  res.status(500).json({ erro: 'Error interno del servidor.' });
+// ─── HEALTH CHECK ─────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// ─── ARRANQUE ───────────────────────────────────────────────────────────────
+// ─── DOCUMENTAÇÃO SWAGGER ─────────────────────────────────────────────────────
+// Acessível em http://localhost:3000/api/docs
+// Permite testar todos os endpoints directamente no navegador
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(especificacion, opcionesUI));
+
+// ─── ROTAS DA API ─────────────────────────────────────────────────────────────
+// IMPORTANTE: as rotas da API devem vir ANTES do fallback SPA
+app.use('/api/v1/tareas', taskRoutes);
+
+// ─── MIDDLEWARE DE ERRO GLOBAL ────────────────────────────────────────────────
+// SEMPRE antes do fallback SPA — 4 parâmetros obrigatórios
+app.use((err, req, res, next) => {
+  if (err.message === 'NO_ENCONTRADO') {
+    return res.status(404).json({ error: 'Tarea no encontrada.' });
+  }
+  // Não vaza detalhes técnicos ao cliente
+  console.error(err);
+  res.status(500).json({ error: 'Error interno del servidor.' });
+});
+
+// ─── FALLBACK SPA ─────────────────────────────────────────────────────────────
+// Express 5 exige '*path' em vez de '*'
+app.get('*path', (req, res) => {
+  res.sendFile(path.join(PASTA_FRONTEND, 'index.html'));
+});
+
+// ─── ARRANQUE ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`✅ Servidor TaskFlow corriendo en http://localhost:${PORT}`);
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`   Frontend  → http://localhost:${PORT}`);
+  console.log(`   API       → http://localhost:${PORT}/api/v1/tareas`);
+  console.log(`   API Docs  → http://localhost:${PORT}/api/docs`);
 });

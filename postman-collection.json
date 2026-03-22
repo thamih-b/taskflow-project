@@ -1,0 +1,433 @@
+{
+  "info": {
+    "name": "TaskFlow API",
+    "_postman_id": "taskflow-api-collection-v1",
+    "description": "Colección completa de pruebas para la API REST de TaskFlow.\n\nIncluye:\n- ✅ Flujo feliz (200 / 201 / 204)\n- ❌ Errores forzados (400 / 404 / 500)\n\n**Importar:** Postman → Import → selecciona este archivo JSON.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "host",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+
+    {
+      "name": "🟢 Sistema",
+      "item": [
+
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{host}}/health", "host": ["{{host}}"], "path": ["health"] },
+            "description": "Verifica que el servidor está activo.\n\n**Esperado:** `200 OK` con `{ status: 'OK', timestamp: '...' }`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status es OK', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('OK');",
+                  "});",
+                  "pm.test('timestamp presente', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.timestamp).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{host}}/api/docs", "host": ["{{host}}"], "path": ["api", "docs"] },
+            "description": "Accede a la documentación interactiva OpenAPI 3.0.\n\n**Esperado:** `200 OK` con HTML de Swagger UI."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es HTML', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "✅ Flujo Feliz",
+      "item": [
+
+        {
+          "name": "GET /tareas — Lista vacía",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "description": "Al arrancar el servidor sin datos la lista debe estar vacía.\n\n**Esperado:** `200 OK` con `[]`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta es array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "POST /tareas — Crear con prioridad alta",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Estudiar para el examen\",\n  \"prioridad\": \"high\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Envía `prioridad: 'high'` → el controller normaliza a `'alta'` antes de guardar.\n\n**Esperado:** `201 Created` con objeto tarea. El ID se guarda en variable de colección para los DELETE."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test('Contiene id, titulo, prioridad, completada', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json).to.have.property('titulo');",
+                  "  pm.expect(json).to.have.property('prioridad');",
+                  "  pm.expect(json).to.have.property('completada');",
+                  "});",
+                  "",
+                  "pm.test('titulo correcto', () => {",
+                  "  pm.expect(pm.response.json().titulo).to.eql('Estudiar para el examen');",
+                  "});",
+                  "",
+                  "pm.test('prioridad normalizada a alta', () => {",
+                  "  pm.expect(pm.response.json().prioridad).to.eql('alta');",
+                  "});",
+                  "",
+                  "pm.test('completada es false', () => {",
+                  "  pm.expect(pm.response.json().completada).to.be.false;",
+                  "});",
+                  "",
+                  "// Guarda el ID para usarlo en el DELETE",
+                  "const id = pm.response.json().id;",
+                  "pm.collectionVariables.set('ultimoId', id);",
+                  "console.log('ID guardado:', id);"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "POST /tareas — Crear sin prioridad (default 'media')",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Comprar leche\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Sin campo `prioridad` → el servicio asigna `'media'` por defecto.\n\n**Esperado:** `201 Created` con `prioridad: 'media'`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('prioridad por defecto es media', () => {",
+                  "  pm.expect(pm.response.json().prioridad).to.eql('media');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "GET /tareas — Lista con datos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "description": "Después de los POST anteriores, la lista ya no debe estar vacía.\n\n**Esperado:** `200 OK` con array de al menos 2 tareas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Array con al menos 1 tarea', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array');",
+                  "  pm.expect(json.length).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('Cada tarea tiene id y titulo', () => {",
+                  "  pm.response.json().forEach(t => {",
+                  "    pm.expect(t).to.have.property('id');",
+                  "    pm.expect(t).to.have.property('titulo');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "DELETE /tareas/:id — Eliminar tarea existente",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/tareas/{{ultimoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tareas", "{{ultimoId}}"]
+            },
+            "description": "Usa el `ultimoId` guardado automáticamente por el POST anterior.\n\n**Esperado:** `204 No Content` sin cuerpo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "pm.test('Sin cuerpo en la respuesta', () => {",
+                  "  pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "❌ Errores Forzados",
+      "item": [
+
+        {
+          "name": "400 — Body completamente vacío",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Sin campo `titulo` → la validación defensiva del controller debe rechazarlo.\n\n**Esperado:** `400 Bad Request` con campo `error` en el cuerpo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Cuerpo contiene campo error', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error');",
+                  "  pm.expect(json.error).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No contiene stack trace', () => {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.include('at Object');",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "400 — Título con solo espacios",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"     \",\n  \"prioridad\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "`titulo` pasa el check `typeof string` pero falla `titulo.trim() === ''`.\n\n**Esperado:** `400 Bad Request`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje de error presente', () => {",
+                  "  pm.expect(pm.response.json().error).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "400 — Título null",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "`typeof null !== 'string'` → falla la segunda condición de la validación.\n\n**Esperado:** `400 Bad Request`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje de error presente', () => {",
+                  "  pm.expect(pm.response.json().error).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "404 — DELETE de ID inexistente",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/tareas/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["tareas", "999999"]
+            },
+            "description": "El servicio lanza `Error('NO_ENCONTRADO')` → el middleware global lo mapea a `404`.\n\n**Esperado:** `404 Not Found` con `{ error: 'Tarea no encontrada.' }`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mensaje correcto', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('Tarea no encontrada.');",
+                  "});",
+                  "pm.test('No contiene stack trace', () => {",
+                  "  pm.expect(pm.response.text()).to.not.include('at Object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "404 — DELETE de ID negativo",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/tareas/-1",
+              "host": ["{{baseUrl}}"],
+              "path": ["tareas", "-1"]
+            },
+            "description": "`parseInt('-1')` no coincide con ningún ID del array.\n\n**Esperado:** `404 Not Found`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Campo error presente', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "500 — Error interno forzado",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tareas", "host": ["{{baseUrl}}"], "path": ["tareas"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Tarea que fuerza error 500\",\n  \"prioridad\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "## Cómo activar este test\n\nAñade temporalmente en `server/src/services/task.service.js`:\n\n```js\ncrearTarea(datos) {\n  throw new Error('FALLO_SIMULADO'); // ← añadir\n  // ...resto del código\n}\n```\n\nEl middleware global captura cualquier error no reconocido y devuelve `500`.\n\n**Verifica:** el body NO debe contener stack traces ni rutas de `node_modules`.\n\n**Retira el `throw` después de la prueba.**"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 500', () => pm.response.to.have.status(500));",
+                  "pm.test('Mensaje genérico — sin filtrar detalles técnicos', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error).to.eql('Error interno del servidor.');",
+                  "});",
+                  "pm.test('No contiene stack trace', () => {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.include('at Object');",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "  pm.expect(body).to.not.include('FALLO_SIMULADO');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+
+      ]
+    }
+
+  ]
+}
