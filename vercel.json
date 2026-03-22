@@ -1,9 +1,15 @@
 {
   "builds": [
-    { "src": "server/src/index.js", "use": "@vercel/node@4" }
+    { "src": "server/src/index.js", "use": "@vercel/node@4" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "*.js",   "use": "@vercel/static" },
+    { "src": "*.css",  "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/v1/(.*)", "dest": "server/src/index.js" },
-    { "src": "/(.*)",        "dest": "/$1" }
+    { "src": "/health",      "dest": "server/src/index.js" },
+    { "src": "/api/docs/(.*)", "dest": "server/src/index.js" },
+    { "src": "/(.*\\.(js|css|html|ico|png|svg))", "dest": "/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
