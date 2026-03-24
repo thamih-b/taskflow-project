@@ -20,25 +20,27 @@ Documentación técnica del backend de TaskFlow.
 ## 🏗 Infraestructura del Servidor
 
 ### Estructura de carpetas
+```text
 server/
 ├── .env
 ├── .env.example
 ├── package.json
 └── src/
-├── index.js # Punto de entrada — configura Express y arranca
-├── config/
-│ └── env.js # Carga y valida variables de entorno al arrancar
-├── routes/
-│ └── task.routes.js # Enrutador — mapea verbos HTTP a controladores
-├── controllers/
-│ └── task.controller.js # Capa HTTP — extrae req, valida, responde
-├── services/
-│ └── task.service.js # Capa de negocio — lógica pura sin HTTP
-└── api/
-└── cliente.js # Capa de red del frontend — consume la API REST
-
+    ├── index.js
+    ├── config/
+    │   └── env.js
+    ├── routes/
+    │   └── task.routes.js
+    ├── controllers/
+    │   └── task.controller.js
+    ├── services/
+    │   └── task.service.js
+    └── api/
+        └── cliente.js
+```
 
 ### Separación de responsabilidades
+```text
 Petición HTTP
 │
 ▼
@@ -55,7 +57,7 @@ Petición HTTP
 │ negocio pura │
 │ sin HTTP │
 └──────────────────┘
-
+```
 
 Cada capa tiene **una única razón para cambiar**:
 - Si cambia el protocolo (REST → GraphQL) → solo `routes` y `controller`

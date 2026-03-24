@@ -44,25 +44,27 @@ y un servidor **Node.js + Express** en el backend con API REST.
 ---
 
 ## 🗂 Arquitectura del Proyecto
+```text
 taskflow-project/
 │
-├── index.html # Shell de la SPA — layout, tabs, sidebar, modal
-├── app.js # Clase OrganizadorDeTareas — lógica de UI completa
-├── i18n.js # Traducciones ES/PT/EN + metadatos de idioma
-├── storage.js # storageManager — preferencias de UI en localStorage
+├── index.html                  # Shell de la SPA — layout, tabs, sidebar, modal
+├── app.js                      # Clase OrganizadorDeTareas — lógica de UI completa
+├── i18n.js                     # Traducciones ES/PT/EN + metadatos de idioma
+├── storage.js                  # storageManager — preferencias de UI en localStorage
 │
-└── server/ # Servidor Node.js independiente
-├── README.md # ← Documentación técnica completa del servidor
-├── .env # Variables de entorno (NO subir a Git)
-├── .env.example # Plantilla pública de variables requeridas
-├── package.json
-└── src/
-├── index.js
-├── config/
-├── routes/
-├── controllers/
-├── services/
-└── api/
+└── server/                     # Servidor Node.js independiente
+    ├── README.md               # ← Documentación técnica completa del servidor
+    ├── .env                    # Variables de entorno (NO subir a Git)
+    ├── .env.example            # Plantilla pública de variables requeridas
+    ├── package.json
+    └── src/
+        ├── index.js
+        ├── config/
+        ├── routes/
+        ├── controllers/
+        ├── services/
+        └── api/
+```
 
 La separación de responsabilidades del backend sigue una **arquitectura de tres capas** estricta.
 Consulta [`server/README.md`](./server/README.md) para la documentación detallada.
