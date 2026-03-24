@@ -113,18 +113,15 @@ class OrganizadorDeTareas {
   // ── Backend ───────────────────────────────────────────────────────────────
   mostrarCargando(){
     const el=document.getElementById('tasksContainer');
-    if(el)el.innerHTML='<div class="text-center py-8 text-amber-700">⏳ Cargando tareas...</div>';
+    if(el)el.innerHTML='<div class="text-center py-8 text-amber-700 dark:text-amber-400 flex items-center justify-center gap-2"><span class="animate-spin text-xl">⏳</span><span>Cargando tareas...</span></div>';
   }
 
   mostrarError(mensaje){
     const el=document.getElementById('tasksContainer');
-    if(el)el.innerHTML=`<div class="text-center py-8 text-red-600">❌ ${mensaje}<br><button onclick="organizador.cargarTareas()" class="mt-2 text-blue-600 underline text-sm">Intentar de nuevo</button></div>`;
+    if(el)el.innerHTML=`<div class="text-center py-8 text-red-600 dark:text-red-400">❌ ${mensaje}<br><button onclick="organizador.cargarTareas()" class="mt-3 inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 underline text-sm hover:text-blue-800 transition">↺ Intentar de nuevo</button></div>`;
   }
 
-  // REQ. LABORATÓRIO fase D: três estados visuais obrigatórios
-  // 1. Carga    → mostrarCargando() enquanto o fetch viaja ao servidor
-  // 2. Sucesso  → renderizar() com as tarefas recebidas
-  // 3. Erro     → mostrarError() se o servidor retornar 4xx/5xx ou cair
+  // Estados visuais: 1.Carga → 2.Sucesso → 3.Erro
   async cargarTareas(){
     this.mostrarCargando();
     try {
@@ -132,7 +129,7 @@ class OrganizadorDeTareas {
       this.renderizar();
     } catch(err) {
       console.error('Error al cargar tareas:', err.message);
-      this.mostrarError('No se pudo conectar con el servidor. <br>Verifica que el backend está corriendo en <strong>http://localhost:3000</strong>');
+      this.mostrarError('No se pudo conectar con el servidor.<br>Verifica que el backend está corriendo en <strong>http://localhost:3000</strong>');
     }
   }
 
@@ -155,11 +152,13 @@ class OrganizadorDeTareas {
     });
     const prio=document.getElementById('nuevaPrioridadInput');
     if(prio){prio.options[0].text=this.t('priorityHigh');prio.options[1].text=this.t('priorityMedium');prio.options[2].text=this.t('priorityLow');}
-    const m=LANG_META[l];
-    const fe=document.getElementById('langCurrentFlag');if(fe)fe.textContent=m.flag;
-    const ce=document.getElementById('langCurrentCode');if(ce)ce.textContent=m.code;
+    // Marca o idioma activo em todos os botões .lang-option (mobile drawer + desktop settings)
     document.querySelectorAll('.lang-option').forEach(b=>b.classList.toggle('active-lang',b.dataset.lang===l));
-    const ti=document.getElementById('themeIconFixed');if(ti)ti.textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';
+    // Ícone e label do tema no dropdown de settings (desktop)
+    const oscuro=document.documentElement.classList.contains('dark');
+    const ti=document.getElementById('themeIconFixed');if(ti)ti.textContent=oscuro?'☀️':'🌙';
+    const desktopLabel=document.getElementById('desktopThemeLabel');
+    if(desktopLabel)desktopLabel.textContent=oscuro?this.t('lightMode'):this.t('darkMode');
     // Sincroniza ambos os botões de ordenar (mobile e desktop)
     const textoOrden=this.ordenadoPorFecha?this.t('sortByDeadlineActive'):this.t('sortByDeadlineBtn');
     const sb=document.getElementById('btnOrdenarPorFecha');if(sb)sb.textContent=textoOrden;
@@ -604,9 +603,21 @@ class OrganizadorDeTareas {
   vincularEventos(){
     document.getElementById('btnTabManual')?.addEventListener('click',()=>this.establecerTabActiva('manual'));
     document.getElementById('btnTabInteligente')?.addEventListener('click',()=>this.establecerTabActiva('smart'));
-    document.getElementById('themeToggleFixed')?.addEventListener('click',()=>this.alternarTema());
+
+    // Tema — fecha o dropdown de settings após alternar
+    document.getElementById('themeToggleFixed')?.addEventListener('click',()=>{
+      this.alternarTema();
+      document.getElementById('settingsDropdown')?.classList.remove('open');
+    });
+
     document.getElementById('btnAgregarTarea')?.addEventListener('click',()=>this.agregarTarea());
     document.getElementById('nuevaTareaInput')?.addEventListener('keypress',e=>{if(e.key==='Enter')this.agregarTarea();});
+
+    // Oculta o aviso de tarea vacía ao digitar
+    document.getElementById('nuevaTareaInput')?.addEventListener('input',()=>{
+      document.getElementById('msgErrorTitulo')?.classList.add('hidden');
+    });
+
     document.getElementById('btnAccionTareaInteligente')?.addEventListener('click',()=>this.ejecutarTareaInteligente());
     document.getElementById('smartTaskPrompt')?.addEventListener('keypress',e=>{if(e.key==='Enter')this.ejecutarTareaInteligente();});
     ['searchInput','searchInputMobile'].forEach(id=>{
@@ -620,7 +631,9 @@ class OrganizadorDeTareas {
     document.getElementById('btnSeleccionarTodo')?.addEventListener('click',()=>this.alternarSeleccionarTodo());
     document.getElementById('btnAccionCompletar')?.addEventListener('click',()=>this.ejecutarAccionCompletar());
     document.getElementById('btnAccionEliminar')?.addEventListener('click',()=>this.ejecutarAccionEliminar());
+    // Ambos os botões de ordenar (mobile drawer + desktop sidebar)
     document.getElementById('btnOrdenarPorFecha')?.addEventListener('click',()=>this.alternarOrdenPorFecha());
+    document.getElementById('btnOrdenarPorFechaDesktop')?.addEventListener('click',()=>this.alternarOrdenPorFecha());
     document.getElementById('calPrevBtn')?.addEventListener('click',()=>this.navegarCalendario(-1));
     document.getElementById('calNextBtn')?.addEventListener('click',()=>this.navegarCalendario(+1));
     document.getElementById('calPrevBtnMobile')?.addEventListener('click',()=>this.navegarCalendario(-1));
@@ -630,7 +643,14 @@ class OrganizadorDeTareas {
     document.getElementById('mobileDrawerBackdrop')?.addEventListener('click',()=>this.cerrarDrawerMobile());
     document.getElementById('btnAgregarSubtarea')?.addEventListener('click',()=>this.agregarSubtareaPendiente());
     document.getElementById('nuevaSubtareaInput')?.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();this.agregarSubtareaPendiente();}});
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(this.tareasVistaPreviaInteligente.length)this.cancelarVistaPrevia();else if(this.drawerMobileAbierto)this.cerrarDrawerMobile();}});
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){
+        if(this.tareasVistaPreviaInteligente.length)this.cancelarVistaPrevia();
+        else if(this.drawerMobileAbierto)this.cerrarDrawerMobile();
+        // Fecha o dropdown de settings com Escape
+        document.getElementById('settingsDropdown')?.classList.remove('open');
+      }
+    });
     document.addEventListener('click',e=>{
       if(e.target.classList.contains('filter-btn')){this.filtroActual=e.target.dataset.filter;this.tareasSeleccionadas.clear();this.renderizarFiltrosEstado();this.renderizar();}
       if(e.target.classList.contains('cat-filter-btn')){this.categoriaActual=e.target.dataset.category;this.tareasSeleccionadas.clear();this.renderizar();}
@@ -650,7 +670,12 @@ class OrganizadorDeTareas {
     document.documentElement.classList.toggle('dark',oscuro);
     document.documentElement.classList.toggle('light',!oscuro);
     document.documentElement.style.colorScheme=oscuro?'dark':'light';
+    // Ícone do botão de tema fixo (dentro do settings dropdown desktop)
     const ti=document.getElementById('themeIconFixed');if(ti)ti.textContent=oscuro?'☀️':'🌙';
+    // Label do settings dropdown desktop (mostra para qual modo vai ao clicar)
+    const desktopLabel=document.getElementById('desktopThemeLabel');
+    if(desktopLabel)desktopLabel.textContent=oscuro?this.t('lightMode'):this.t('darkMode');
+    // Ícone e label do drawer mobile
     const icono=document.getElementById('drawerThemeIcon');if(icono)icono.textContent=oscuro?'☀️':'🌙';
     const label=document.getElementById('drawerThemeLabel');if(label)label.textContent=oscuro?this.t('lightMode'):this.t('darkMode');
   }
@@ -663,15 +688,31 @@ class OrganizadorDeTareas {
   // ── CRUD de tareas ────────────────────────────────────────────────────────
   async agregarTarea(){
     const inputTitulo=document.getElementById('nuevaTareaInput');
+    const btnAgregar=document.getElementById('btnAgregarTarea');
     const selectPrio=document.getElementById('nuevaPrioridadInput');
     const selectCat=document.getElementById('nuevaCategoriaSelect');
     const inputCat=document.getElementById('nuevaCategoriaTexto');
     const inputFecha=document.getElementById('nuevaTareaFecha');
     const inputHora=document.getElementById('nuevaTareaHora');
     const btnCancelar=document.getElementById('btnCancelarNuevaCat');
+    const msgError=document.getElementById('msgErrorTitulo');
 
     const texto=inputTitulo?.value.trim();
-    if(!texto){inputTitulo?.focus();return;}
+
+    // Aviso inline quando o título está vazio
+    if(!texto){
+      if(msgError){
+        msgError.textContent=`⚠️ ${this.t('emptyTaskWarning')}`;
+        msgError.classList.remove('hidden');
+        // Auto-oculta após 3 s
+        clearTimeout(msgError._timer);
+        msgError._timer=setTimeout(()=>msgError.classList.add('hidden'),3000);
+      }
+      inputTitulo?.focus();
+      return;
+    }
+    // Oculta o aviso se o título for válido
+    if(msgError)msgError.classList.add('hidden');
 
     const esDuplicada=this.tasks.some(t=>t.text.toLowerCase().trim()===texto.toLowerCase().trim());
     if(esDuplicada){alert(this.t('duplicateTask'));inputTitulo?.focus();return;}
@@ -689,7 +730,7 @@ class OrganizadorDeTareas {
     const valFecha=inputFecha?.value||'';
     const valHora=inputHora?.value||'';
 
-    // Limpa o formulário antes de aguardar o backend (UX mais rápida)
+    // Limpa o formulário imediatamente para UX responsiva
     if(inputTitulo)inputTitulo.value='';
     if(selectPrio)selectPrio.value='medium';
     if(inputFecha)inputFecha.value='';
@@ -698,7 +739,9 @@ class OrganizadorDeTareas {
     if(btnCancelar)btnCancelar.classList.add('hidden');
     if(selectCat)selectCat.classList.remove('hidden');
     this.renderizarSubtareasPendientes();
-    inputTitulo?.focus();
+
+    // Estado de carga no botão enquanto o fetch viaja ao servidor
+    if(btnAgregar){btnAgregar.disabled=true;btnAgregar.innerHTML=`<span class="animate-pulse">⏳</span>`;}
 
     try{
       const tareaCreada=await clienteApi.crearTarea({titulo:texto,prioridad});
@@ -713,6 +756,10 @@ class OrganizadorDeTareas {
       this.renderizar();
     }catch(err){
       alert('Error al crear la tarea: '+err.message);
+    }finally{
+      // Restaura o botão independentemente do resultado
+      if(btnAgregar){btnAgregar.disabled=false;btnAgregar.textContent=this.t('addBtn');}
+      inputTitulo?.focus();
     }
   }
 
@@ -731,6 +778,11 @@ class OrganizadorDeTareas {
   async eliminarTarea(id){
     const t=this.tasks.find(t=>t.id===id);if(!t)return;
     if(!confirm(`${this.t('confirmDelete')}${t.text}${this.t('confirmDeleteSuffix')}`))return;
+
+    // Estado de carga: escurece o card e bloqueia interações
+    const cardEl=document.querySelector(`article[data-id="${id}"]`);
+    if(cardEl){cardEl.classList.add('opacity-40','pointer-events-none','scale-[0.98]');}
+
     try{
       await clienteApi.eliminarTarea(id);
       this.tasks=this.tasks.filter(t=>t.id!==id);
@@ -740,6 +792,8 @@ class OrganizadorDeTareas {
       this.renderizarCalendario();
       this.renderizar();
     }catch(err){
+      // Restaura o card se a eliminação falhar
+      if(cardEl){cardEl.classList.remove('opacity-40','pointer-events-none','scale-[0.98]');}
       alert('Error al eliminar: '+err.message);
     }
   }
@@ -773,6 +827,6 @@ class OrganizadorDeTareas {
   }
 }
 
-// Instância global — dois aliases para compatibilidade com chamadas inline no HTML
+// Instância global
 const organizadorDeTareas = new OrganizadorDeTareas();
 const organizador = organizadorDeTareas;

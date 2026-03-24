@@ -12,11 +12,16 @@
     .subtasks-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows 0.32s ease;}
     .subtasks-panel.open{grid-template-rows:1fr;}
     .subtasks-inner{overflow:hidden;}
-    #langDropdown{display:none;}#langDropdown.open{display:flex;}
+
+    /* ── Settings dropdown (desktop) ─────────────────────────────────────── */
+    #settingsDropdown{display:none;}
+    #settingsDropdown.open{display:flex;flex-direction:column;}
+
     .lang-option{transition:background 0.12s;}.lang-option:hover{background:rgba(180,83,9,0.1);}
     .dark .lang-option:hover{background:rgba(251,191,36,0.1);}
     .lang-option.active-lang{background:rgba(180,83,9,0.14);font-weight:700;}
     .dark .lang-option.active-lang{background:rgba(251,191,36,0.14);}
+
     input[type="date"],input[type="time"]{color-scheme:light;}.dark input[type="date"],.dark input[type="time"]{color-scheme:dark;}
     .tab-underline{position:absolute;bottom:-1px;left:0;right:0;height:2px;border-radius:2px;background:linear-gradient(90deg,#92400e,#b45309);transform:scaleX(0);transition:transform 0.25s ease;}
     .tab-btn-elegant.active .tab-underline{transform:scaleX(1);}
@@ -74,7 +79,7 @@
       <div class="flex flex-wrap gap-1.5" id="categoryFilterContainerMobile"></div>
     </div>
 
-    <!-- Idioma + Tema (apenas mobile) -->
+    <!-- Idioma + Tema — mobile drawer (sin cambios) -->
     <div class="px-4 py-3 flex items-center justify-between border-b border-amber-900/10 dark:border-amber-700/20 shrink-0">
       <div class="flex items-center gap-1.5">
         <button class="lang-option flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-200/60 dark:hover:bg-zinc-700/60 transition"
@@ -108,36 +113,59 @@
     </div>
   </div>
 
-  <!-- ═══ TOPO DIREITO: tema + idioma (apenas desktop) ═══ -->
-  <div class="hidden md:flex absolute top-4 right-4 z-[100] items-center gap-1">
-    <button id="themeToggleFixed" title="Cambiar tema"
-      class="flex items-center justify-center w-10 h-10 rounded-xl bg-parchment/97 dark:bg-zinc-900/97 border-2 border-amber-900/40 dark:border-amber-600/50 shadow-lg hover:shadow-xl transition-all text-lg">
-      <span id="themeIconFixed">🌙</span>
-    </button>
-    <div id="langWidget" class="relative">
-      <button id="langToggleBtn"
-        class="flex items-center gap-1.5 px-3 h-10 rounded-xl bg-parchment/97 dark:bg-zinc-900/97 border-2 border-amber-900/40 dark:border-amber-600/50 shadow-lg hover:shadow-xl transition-all text-sm font-semibold text-amber-900 dark:text-amber-100"
-        onclick="document.getElementById('langDropdown').classList.toggle('open')">
-        <span id="langCurrentFlag">🇪🇸</span>
-        <span id="langCurrentCode" class="tracking-wider text-xs">ES</span>
-        <span class="text-[9px] text-amber-700/60 dark:text-amber-400/60">▼</span>
+  <!-- ═══ BOTÃO DE CONFIGURAÇÕES (apenas desktop) ═══ -->
+  <!-- Substitui os botões separados de tema e idioma.
+       O mobile continua a usar o drawer com os mesmos controlos. -->
+  <div class="hidden md:flex absolute top-4 right-4 z-[100]">
+    <div id="settingsWidget" class="relative">
+      <!-- Botão ⚙️ -->
+      <button id="btnConfiguracion"
+        class="flex items-center justify-center w-10 h-10 rounded-xl bg-parchment/97 dark:bg-zinc-900/97 border-2 border-amber-900/40 dark:border-amber-600/50 shadow-lg hover:shadow-xl transition-all text-lg"
+        onclick="document.getElementById('settingsDropdown').classList.toggle('open')"
+        title="Configuración">
+        ⚙️
       </button>
-      <div id="langDropdown"
-        class="absolute right-0 top-full mt-1.5 flex-col w-44 rounded-xl overflow-hidden bg-parchment/80 dark:bg-zinc-900/80 border border-amber-900/25 dark:border-amber-600/35 shadow-2xl">
-        <button class="lang-option flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="es"
-          onclick="organizador.establecerIdioma('es');document.getElementById('langDropdown').classList.remove('open')">
-          <span class="text-base">🇪🇸</span><span>Español</span></button>
-        <button class="lang-option flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="pt"
-          onclick="organizador.establecerIdioma('pt');document.getElementById('langDropdown').classList.remove('open')">
-          <span class="text-base">🇧🇷</span><span>Português</span></button>
-        <button class="lang-option flex items-center gap-3 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 w-full text-left" data-lang="en"
-          onclick="organizador.establecerIdioma('en');document.getElementById('langDropdown').classList.remove('open')">
-          <span class="text-base">🇺🇸</span><span>English</span></button>
+
+      <!-- Dropdown de configurações -->
+      <div id="settingsDropdown"
+        class="absolute right-0 top-full mt-2 w-52 rounded-xl overflow-hidden
+          bg-amber-50/90 dark:bg-zinc-900/90
+          border-2 border-amber-900/40 dark:border-amber-600/50
+          shadow-2xl">
+        <!-- Fila de tema: al hacer clic alterna el tema Y cierra el dropdown -->
+        <button id="themeToggleFixed"
+          class="flex items-center gap-3 w-full px-4 py-3 text-sm font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100/60 dark:hover:bg-zinc-800/60 transition text-left">
+          <span id="themeIconFixed" class="text-base">🌙</span>
+          <span id="desktopThemeLabel">Modo Oscuro</span>
+        </button>
+
+        <div class="border-t border-amber-900/15 dark:border-amber-700/25 mx-3"></div>
+
+        <!-- Opciones de idioma -->
+        <button class="lang-option flex items-center gap-3 w-full px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 text-left" data-lang="es"
+          onclick="organizador.establecerIdioma('es');document.getElementById('settingsDropdown').classList.remove('open')">
+          <span class="text-base">🇪🇸</span><span>Español</span>
+        </button>
+        <button class="lang-option flex items-center gap-3 w-full px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 text-left" data-lang="pt"
+          onclick="organizador.establecerIdioma('pt');document.getElementById('settingsDropdown').classList.remove('open')">
+          <span class="text-base">🇧🇷</span><span>Português</span>
+        </button>
+        <button class="lang-option flex items-center gap-3 w-full px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100 text-left" data-lang="en"
+          onclick="organizador.establecerIdioma('en');document.getElementById('settingsDropdown').classList.remove('open')">
+          <span class="text-base">🇺🇸</span><span>English</span>
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Fecha o settings dropdown ao clicar fora -->
   <script>
-    document.addEventListener('click',e=>{const w=document.getElementById('langWidget');if(w&&!w.contains(e.target))document.getElementById('langDropdown')?.classList.remove('open');});
+    document.addEventListener('click', e => {
+      const w = document.getElementById('settingsWidget');
+      if (w && !w.contains(e.target)) {
+        document.getElementById('settingsDropdown')?.classList.remove('open');
+      }
+    });
   </script>
 
   <!-- ═══ PÁGINA ═══ -->
@@ -205,8 +233,14 @@
                 <option value="low">Prioridad: Baja</option>
               </select>
               <button id="btnAgregarTarea" type="button"
-                class="inline-flex justify-center items-center rounded-md bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-amber-950 font-semibold text-sm px-10 py-3 shadow-lg shadow-amber-800/30 hover:shadow-amber-800/50 active:scale-[0.97] transition" data-i18n="addBtn">Agregar</button>
+                class="inline-flex justify-center items-center rounded-md bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-amber-950 font-semibold text-sm px-10 py-3 shadow-lg shadow-amber-800/30 hover:shadow-amber-800/50 active:scale-[0.97] transition disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="addBtn">Agregar</button>
             </div>
+
+            <!-- Aviso de tarea vacía — aparece debajo de la fila de inputs -->
+            <p id="msgErrorTitulo"
+              class="hidden text-xs font-semibold text-red-500 dark:text-red-400 mt-2 pl-1 transition-all">
+            </p>
+
             <div class="mt-3 space-y-2">
               <div class="flex items-center gap-2">
                 <span class="shrink-0 text-xs text-amber-700/55 dark:text-amber-400/55 font-semibold uppercase tracking-wider select-none pl-1">↳</span>
@@ -367,19 +401,9 @@
     </aside>
   </div>
 
-  <!--
-    Ordem de carregamento:
-    1. i18n.js     — traduções (sem dependências)
-    2. storage.js  — persistência local (sem dependências)
-    3. cliente.js  — comunicação com o backend (sem dependências)
-    4. app.js      — lógica principal (depende dos três anteriores)
-
-    Alias global: organizador = organizadorDeTareas
-    Todos os métodos e IDs estão em espanhol para consistência com cliente.js
-  -->
-<script src="/i18n.js"></script>
-<script src="/storage.js"></script>
-<script src="/cliente.js"></script>
-<script src="/app.js"></script>
+  <script src="/i18n.js"></script>
+  <script src="/storage.js"></script>
+  <script src="/cliente.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

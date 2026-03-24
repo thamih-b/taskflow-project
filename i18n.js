@@ -46,7 +46,6 @@ const I18N = {
     smartHowItem3: 'Prioridad: "urgente", "alta prioridad", "sin prisa"',
     smartHowItem4: 'Categorías: Compras, Trabajo, Estudios, Salud, Casa, Finanzas…',
     smartHowItem5: 'Cuidados especiales: Los acentos marcan la diferencia. Escribe de la manera más clara posible para un mejor funcionamiento',
-
     errorProcessing:'Error al procesar la tarea. Inténtalo de nuevo.',
     calendarTitle:'Calendario', calClearFilter:'✕ Limpiar filtro',
     calLegendTask:'Tarea', calLegendUrgent:'Urgente', calLegendOverdue:'Vencida',
@@ -57,6 +56,10 @@ const I18N = {
     sortByDeadlineBtn:'📅 Ordenar por fecha', sortByDeadlineActive:'📅 Por fecha ✓',
     subtasksAdded:'subtarea(s) listas', itemsLabel:'ítems',
     duplicateTask:'Ya existe una tarea con ese título.',
+    // NUEVO: aviso cuando el usuario intenta agregar una tarea sin título
+    emptyTaskWarning:'El título no puede estar vacío.',
+    addingTask:'Agregando...',
+    deletingTask:'Eliminando...',
     previewTitle:'Vista previa — confirma antes de agregar',
     previewTaskLabel:'Tarea', previewCategoryLabel:'Categoría',
     previewPriorityLabel:'Prioridad', previewDateLabel:'Fecha',
@@ -66,7 +69,7 @@ const I18N = {
     previewConfirmBtn:'✅ Confirmar y agregar', previewCancelBtn:'✕ Cancelar',
     previewNoDate:'Sin fecha',
     mobileMenuOpen:'Abrir menú',
-    
+    settingsLabel:'Configuración',
   },
   pt: {
     appTitle:'Organizador de Tarefas', appSubtitle:'Um presente organizado é um futuro garantido.',
@@ -125,6 +128,10 @@ const I18N = {
     sortByDeadlineBtn:'📅 Ordenar por data', sortByDeadlineActive:'📅 Por data ✓',
     subtasksAdded:'subtarefa(s) prontas', itemsLabel:'itens',
     duplicateTask:'Já existe uma tarefa com esse título.',
+    // NOVO: aviso quando o usuário tenta adicionar uma tarefa sem título
+    emptyTaskWarning:'O título não pode estar vazio.',
+    addingTask:'Adicionando...',
+    deletingTask:'Excluindo...',
     previewTitle:'Pré-visualização — confirme antes de adicionar',
     previewTaskLabel:'Tarefa', previewCategoryLabel:'Categoria',
     previewPriorityLabel:'Prioridade', previewDateLabel:'Data',
@@ -134,6 +141,7 @@ const I18N = {
     previewConfirmBtn:'✅ Confirmar e adicionar', previewCancelBtn:'✕ Cancelar',
     previewNoDate:'Sem data',
     mobileMenuOpen:'Abrir menu',
+    settingsLabel:'Configurações',
   },
   en: {
     appTitle:'Task Organizer', appSubtitle:'An organized today is a secure tomorrow.',
@@ -192,6 +200,10 @@ const I18N = {
     sortByDeadlineBtn:'📅 Sort by date', sortByDeadlineActive:'📅 By date ✓',
     subtasksAdded:'subtask(s) ready', itemsLabel:'items',
     duplicateTask:'A task with that title already exists.',
+    // NEW: warning when the user tries to add a task without a title
+    emptyTaskWarning:'Title cannot be empty.',
+    addingTask:'Adding...',
+    deletingTask:'Deleting...',
     previewTitle:'Preview — confirm before adding',
     previewTaskLabel:'Task', previewCategoryLabel:'Category',
     previewPriorityLabel:'Priority', previewDateLabel:'Date',
@@ -201,6 +213,7 @@ const I18N = {
     previewConfirmBtn:'✅ Confirm & add', previewCancelBtn:'✕ Cancel',
     previewNoDate:'No date',
     mobileMenuOpen:'Open menu',
+    settingsLabel:'Settings',
   }
 };
 
